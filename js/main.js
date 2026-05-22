@@ -1,134 +1,353 @@
-import './render'; // 初始化Canvas
-import Player from './player/index'; // 导入玩家类
-import Enemy from './npc/enemy'; // 导入敌机类
-import BackGround from './runtime/background'; // 导入背景类
-import GameInfo from './runtime/gameinfo'; // 导入游戏UI类
-import Music from './runtime/music'; // 导入音乐类
-import DataBus from './databus'; // 导入数据类，用于管理游戏状态和数据
+import './render';
+import DataBus from './databus';
+import Cultivator from './entities/cultivator';
+import CombatSystem from './systems/combat';
+import CultivationSystem from './systems/cultivation';
+import SkillSystem from './systems/skill';
+import EquipmentSystem from './systems/equipment';
+import ShopSystem from './systems/shop';
+import MapSystem from './systems/map';
+import { loadSaveData, saveToStorage } from './utils/storage';
+import { calculateOfflineRewards, applyOfflineRewards } from './systems/offline';
+import TopBar from './ui/topBar';
+import BottomBar from './ui/bottomBar';
+import PanelCultivation from './ui/panelCultivation';
+import PanelSkill from './ui/panelSkill';
+import PanelBag from './ui/panelBag';
+import PanelShop from './ui/panelShop';
+import PanelMap from './ui/panelMap';
+import FloatingText from './ui/floatingText';
+import REALMS from './config/realms';
+import { SkillInstance } from './systems/skill';
+import INNER_SKILLS from './config/innerSkills';
+import { OUTER_SKILLS } from './config/outerSkills';
 
-const ENEMY_GENERATE_INTERVAL = 30;
-const ctx = canvas.getContext('2d'); // 获取canvas的2D绘图上下文;
+const ctx = canvas.getContext('2d');
 
-GameGlobal.databus = new DataBus(); // 全局数据管理，用于管理游戏状态和数据
-GameGlobal.musicManager = new Music(); // 全局音乐管理实例
+GameGlobal.databus = new DataBus();
 
-/**
- * 游戏主函数
- */
 export default class Main {
-  aniId = 0; // 用于存储动画帧的ID
-  bg = new BackGround(); // 创建背景
-  player = new Player(); // 创建玩家
-  gameInfo = new GameInfo(); // 创建游戏UI显示
-
   constructor() {
-    // 当开始游戏被点击时，重新开始游戏
-    this.gameInfo.on('restart', this.start.bind(this));
+    this.aniId = 0;
+    this.lastTime = Date.now();
 
-    // 开始游戏
-    this.start();
+    this.initSystems();
+    this.initUI();
+    this.loadGame();
+    this.bindEvents();
+    this.loop();
   }
 
-  /**
-   * 开始或重启游戏
-   */
-  start() {
-    GameGlobal.databus.reset(); // 重置数据
-    this.player.init(); // 重置玩家状态
-    cancelAnimationFrame(this.aniId); // 清除上一局的动画
-    this.aniId = requestAnimationFrame(this.loop.bind(this)); // 开始新的动画循环
+  initSystems() {
+    const bus = GameGlobal.databus;
+    bus.cultivationSystem = new CultivationSystem();
+    bus.combatSystem = new CombatSystem();
+    bus.skillSystem = new SkillSystem();
+    bus.equipmentSystem = new EquipmentSystem();
+    bus.shopSystem = new ShopSystem();
+    bus.mapSystem = new MapSystem();
   }
 
-  /**
-   * 随着帧数变化的敌机生成逻辑
-   * 帧数取模定义成生成的频率
-   */
-  enemyGenerate() {
-    // 每30帧生成一个敌机
-    if (GameGlobal.databus.frame % ENEMY_GENERATE_INTERVAL === 0) {
-      const enemy = GameGlobal.databus.pool.getItemByClass('enemy', Enemy); // 从对象池获取敌机实例
-      enemy.init(); // 初始化敌机
-      GameGlobal.databus.enemys.push(enemy); // 将敌机添加到敌机数组中
-    }
+  initUI() {
+    this.topBar = new TopBar();
+    this.bottomBar = new BottomBar();
+    this.panelCultivation = new PanelCultivation();
+    this.panelSkill = new PanelSkill();
+    this.panelBag = new PanelBag();
+    this.panelShop = new PanelShop();
+    this.panelMap = new PanelMap();
+    this.floatingText = new FloatingText();
   }
 
-  /**
-   * 全局碰撞检测
-   */
-  collisionDetection() {
-    // 检测子弹与敌机的碰撞
-    GameGlobal.databus.bullets.forEach((bullet) => {
-      for (let i = 0, il = GameGlobal.databus.enemys.length; i < il; i++) {
-        const enemy = GameGlobal.databus.enemys[i];
+  loadGame() {
+    const bus = GameGlobal.databus;
+    const player = new Cultivator();
+    bus.cultivator = player;
 
-        // 如果敌机存活并且发生了发生碰撞
-        if (enemy.isCollideWith(bullet)) {
-          enemy.destroy(); // 销毁敌机
-          bullet.destroy(); // 销毁子弹
-          GameGlobal.databus.score += 1; // 增加分数
-          break; // 退出循环
+    const saveData = loadSaveData();
+
+    if (saveData) {
+      player.realmIndex = saveData.realmIndex;
+      player.level = saveData.level;
+      player.realm = REALMS[player.realmIndex].name;
+      player.cultivation = saveData.cultivation;
+      player.maxCultivation = saveData.maxCultivation || bus.cultivationSystem.calcCultivationRequired(saveData.realmIndex, true);
+      player.spiritStone = saveData.spiritStone;
+      player.spirit = saveData.spirit !== undefined ? saveData.spirit : REALMS[player.realmIndex].spiritBase;
+      player.equipment = saveData.equipment || { weapon: null, helmet: null, armor: null, boots: null, accessory: null };
+      player.bag = saveData.bag || [];
+      player.fragments = saveData.fragments || {};
+
+      // restore skills
+      if (saveData.innerSkills) {
+        player.innerSkills = saveData.innerSkills.map(s => {
+          const cfg = INNER_SKILLS.find(c => c.id === s.id);
+          if (!cfg) return null;
+          const inst = new SkillInstance(cfg, 'inner');
+          inst.proficiency = s.proficiency || 0;
+          inst.proficiencyLevel = s.proficiencyLevel || 0;
+          return inst;
+        }).filter(Boolean);
+      }
+
+      if (saveData.outerSkills) {
+        player.outerSkills = saveData.outerSkills.map(s => {
+          const cfg = OUTER_SKILLS.find(c => c.id === s.id);
+          if (!cfg) return null;
+          const inst = new SkillInstance(cfg, 'outer');
+          inst.proficiency = s.proficiency || 0;
+          inst.proficiencyLevel = s.proficiencyLevel || 0;
+          return inst;
+        }).filter(Boolean);
+      }
+
+      bus.currentMapId = saveData.currentMapId || 0;
+      bus.totalKills = saveData.totalKills || 0;
+
+      // restore shop state
+      if (bus.shopSystem && saveData.shopTimer !== undefined) {
+        bus.shopSystem.timer = saveData.shopTimer;
+        bus.shopSystem.items = saveData.shopItems || [];
+        bus.shopSystem.manualRefreshCount = saveData.shopManualRefreshCount || 0;
+      } else {
+        bus.shopSystem.autoRefresh();
+      }
+
+      // offline rewards
+      if (saveData.lastOnlineTime) {
+        const offlineSec = (Date.now() - saveData.lastOnlineTime) / 1000;
+        if (offlineSec > 60) {
+          const rewards = calculateOfflineRewards(offlineSec);
+          if (rewards) {
+            bus.lastOfflineReward = rewards;
+            bus.needShowOffline = true;
+          }
         }
       }
+
+      player.recalcStats();
+    } else {
+      // new player: initialize
+      player.recalcStats();
+      player.spiritStone = 100;
+      player.spirit = player.maxSpirit;
+      bus.shopSystem.autoRefresh();
+      bus.skillSystem.unlockRealmSkills(0);
+    }
+
+    // init per-min rates
+    this.topBar.updatePerMinRates();
+  }
+
+  bindEvents() {
+    wx.onTouchStart((e) => {
+      if (!e.touches || !e.touches.length) return;
+      const touch = e.touches[0];
+      const x = touch.clientX;
+      const y = touch.clientY;
+
+      // offline reward dialog
+      if (GameGlobal.databus.needShowOffline) {
+        GameGlobal.databus.needShowOffline = false;
+        if (GameGlobal.databus.lastOfflineReward) {
+          applyOfflineRewards(GameGlobal.databus.lastOfflineReward);
+          GameGlobal.databus.lastOfflineReward = null;
+        }
+        return;
+      }
+
+      // bottom bar handling
+      if (y > this.bottomBar.getTop()) {
+        const panelId = this.bottomBar.handleTouch(x, y);
+        this.handlePanelSwitch(panelId);
+        return;
+      }
+
+      // panel touch handling (active panel absorbs touches)
+      const panel = this.getActivePanel();
+      if (panel && panel.visible) {
+        panel.handleTouch(x, y);
+        return;
+      }
     });
+  }
 
-    // 检测玩家与敌机的碰撞
-    for (let i = 0, il = GameGlobal.databus.enemys.length; i < il; i++) {
-      const enemy = GameGlobal.databus.enemys[i];
+  handlePanelSwitch(panelId) {
+    // close all panels
+    this.panelCultivation.hide();
+    this.panelSkill.hide();
+    this.panelBag.hide();
+    this.panelShop.hide();
+    this.panelMap.hide();
 
-      // 如果玩家与敌机发生碰撞
-      if (this.player.isCollideWith(enemy)) {
-        this.player.destroy(); // 销毁玩家飞机
-        GameGlobal.databus.gameOver(); // 游戏结束
-
-        break; // 退出循环
-      }
+    // open selected
+    switch (panelId) {
+      case 'cultivation':
+        this.panelCultivation.show();
+        break;
+      case 'skill':
+        this.panelSkill.show();
+        break;
+      case 'bag':
+        this.panelBag.show();
+        break;
+      case 'shop':
+        this.panelShop.show();
+        break;
+      case 'map':
+        this.panelMap.show();
+        break;
     }
   }
 
-  /**
-   * canvas重绘函数
-   * 每一帧重新绘制所有的需要展示的元素
-   */
+  getActivePanel() {
+    const panels = [
+      this.panelCultivation,
+      this.panelSkill,
+      this.panelBag,
+      this.panelShop,
+      this.panelMap,
+    ];
+    return panels.find(p => p.visible);
+  }
+
+  update(dt) {
+    GameGlobal.databus.frame++;
+
+    const bus = GameGlobal.databus;
+
+    // cultivation tick
+    bus.cultivationSystem.update(dt);
+
+    // combat tick
+    bus.combatSystem.update(dt);
+
+    // shop timer
+    bus.shopSystem.update(dt);
+
+    // floating texts
+    this.floatingText.update(dt);
+
+    // per-min rates update
+    this.topBar.update();
+
+    // auto-save every 600 frames (~10s)
+    if (bus.frame % 600 === 0) {
+      saveToStorage();
+    }
+
+    // reset daily refresh cost
+    const now = new Date();
+    if (now.getHours() === 0 && now.getMinutes() === 0 && !this._resetToday) {
+      bus.shopSystem.resetManualRefreshCost();
+      this._resetToday = true;
+    }
+    if (now.getHours() !== 0 || now.getMinutes() !== 0) {
+      this._resetToday = false;
+    }
+  }
+
   render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // 清空画布
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    this.bg.render(ctx); // 绘制背景
-    this.player.render(ctx); // 绘制玩家飞机
-    GameGlobal.databus.bullets.forEach((item) => item.render(ctx)); // 绘制所有子弹
-    GameGlobal.databus.enemys.forEach((item) => item.render(ctx)); // 绘制所有敌机
-    this.gameInfo.render(ctx); // 绘制游戏UI
-    GameGlobal.databus.animations.forEach((ani) => {
-      if (ani.isPlaying) {
-        ani.aniRender(ctx); // 渲染动画
-      }
-    }); // 绘制所有动画
-  }
+    // background
+    ctx.fillStyle = '#2B1B3D';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 游戏逻辑更新主函数
-  update() {
-    GameGlobal.databus.frame++; // 增加帧数
+    // floor gradient
+    const floorY = canvas.height * 0.55;
+    const gradient = ctx.createLinearGradient(0, floorY, 0, canvas.height);
+    gradient.addColorStop(0, '#3D5A3C');
+    gradient.addColorStop(1, '#1A1A2E');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
 
-    if (GameGlobal.databus.isGameOver) {
-      return;
+    // floor line
+    ctx.fillStyle = '#5A4A3A';
+    ctx.fillRect(0, floorY, canvas.width, 3);
+
+    // combat (monster + damage numbers)
+    GameGlobal.databus.combatSystem.render(ctx);
+
+    // cultivator
+    GameGlobal.databus.cultivator.render(ctx);
+
+    // floating texts
+    this.floatingText.render(ctx);
+
+    // offline reward dialog
+    if (GameGlobal.databus.needShowOffline && GameGlobal.databus.lastOfflineReward) {
+      this.renderOfflineReward(ctx);
     }
 
-    this.bg.update(); // 更新背景
-    this.player.update(); // 更新玩家
-    // 更新所有子弹
-    GameGlobal.databus.bullets.forEach((item) => item.update());
-    // 更新所有敌机
-    GameGlobal.databus.enemys.forEach((item) => item.update());
+    // top bar
+    this.topBar.render(ctx);
 
-    this.enemyGenerate(); // 生成敌机
-    this.collisionDetection(); // 检测碰撞
+    // bottom bar
+    this.bottomBar.render(ctx);
+
+    // panels
+    this.panelCultivation.render(ctx);
+    this.panelSkill.render(ctx);
+    this.panelBag.render(ctx);
+    this.panelShop.render(ctx);
+    this.panelMap.render(ctx);
   }
 
-  // 实现游戏帧循环
-  loop() {
-    this.update(); // 更新游戏逻辑
-    this.render(); // 渲染游戏画面
+  renderOfflineReward(ctx) {
+    const r = GameGlobal.databus.lastOfflineReward;
+    if (!r) return;
 
-    // 请求下一帧动画
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const bw = 260;
+    const bh = 200;
+    const bx = (canvas.width - bw) / 2;
+    const by = (canvas.height - bh) / 2;
+
+    ctx.fillStyle = 'rgba(26, 26, 46, 0.97)';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#C9A96E';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bx, by, bw, bh);
+
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('离线收益', bx + bw / 2, by + 30);
+
+    ctx.fillStyle = '#F5E6C8';
+    ctx.font = '13px sans-serif';
+    ctx.fillText(`离线 ${r.totalMin} 分钟`, bx + bw / 2, by + 55);
+
+    ctx.fillStyle = '#00BCD4';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(`灵石 +${r.stone.toLocaleString()}`, bx + bw / 2, by + 80);
+
+    ctx.fillStyle = '#9C27B0';
+    ctx.fillText(`修为 +${r.cultivation.toLocaleString()}`, bx + bw / 2, by + 100);
+
+    if (r.stoneSpent > 0) {
+      ctx.fillStyle = '#F44336';
+      ctx.fillText(`修炼消耗 -${r.stoneSpent.toLocaleString()}`, bx + bw / 2, by + 120);
+    }
+
+    ctx.fillStyle = '#999';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('点击屏幕领取', bx + bw / 2, by + 160);
+
+    ctx.restore();
+  }
+
+  loop() {
+    const now = Date.now();
+    const dt = Math.min(0.5, (now - this.lastTime) / 1000);
+    this.lastTime = now;
+
+    this.update(dt);
+    this.render();
     this.aniId = requestAnimationFrame(this.loop.bind(this));
   }
 }
