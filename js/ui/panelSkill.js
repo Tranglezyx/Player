@@ -70,7 +70,7 @@ export default class PanelSkill {
     ctx.fillStyle = innerActive ? PALETTE.uiBorder : '#666';
     ctx.fillRect(px, tabY + tabH - 2, tabW, 2);
     ctx.fillStyle = innerActive ? PALETTE.textHighlight : PALETTE.textMuted;
-    ctx.font = innerActive ? 'bold 14px sans-serif' : '14px sans-serif';
+    ctx.font = innerActive ? 'bold 16px sans-serif' : '16px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('心法', px + tabW / 2, tabY + 20);
 
@@ -81,7 +81,7 @@ export default class PanelSkill {
     ctx.fillStyle = outerActive ? PALETTE.uiBorder : '#666';
     ctx.fillRect(px + tabW, tabY + tabH - 2, tabW, 2);
     ctx.fillStyle = outerActive ? PALETTE.textHighlight : PALETTE.textMuted;
-    ctx.font = outerActive ? 'bold 14px sans-serif' : '14px sans-serif';
+    ctx.font = outerActive ? 'bold 16px sans-serif' : '16px sans-serif';
     ctx.fillText('术法', px + tabW + tabW / 2, tabY + 20);
 
     const listStartY = tabY + tabH + 8;
@@ -91,7 +91,7 @@ export default class PanelSkill {
 
     if (skills.length === 0) {
       ctx.fillStyle = PALETTE.textMuted;
-      ctx.font = '14px sans-serif';
+      ctx.font = '16px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('暂未习得功法，突破境界可解锁', px + pw / 2, curY + 40);
       ctx.textAlign = 'left';
@@ -109,7 +109,7 @@ export default class PanelSkill {
       // 功法名称 + 品质色
       const nameColor = skill.proficiencyLevel >= 3 ? PALETTE.quality[4].color : PALETTE.textMain;
       ctx.fillStyle = nameColor;
-      ctx.font = 'bold 14px sans-serif';
+      ctx.font = 'bold 16px sans-serif';
       ctx.fillText(skill.name, px + 15, curY + 18);
 
       // 类型标签
@@ -120,14 +120,14 @@ export default class PanelSkill {
       if (skill.type === 'aura') typeColor = PALETTE.textHighlight;
 
       ctx.fillStyle = typeColor;
-      ctx.font = '12px sans-serif';
+      ctx.font = '14px sans-serif';
       ctx.fillText(`[${typeLabel}]`, px + 15, curY + 36);
 
       // 熟练度
       const profInfo = skill.proficiencyName;
       const nextLevel = PROFICIENCY_LEVELS[skill.proficiencyLevel + 1];
       ctx.fillStyle = PALETTE.textHighlight;
-      ctx.font = '12px sans-serif';
+      ctx.font = '14px sans-serif';
       if (nextLevel) {
         ctx.fillText(`${profInfo} ${skill.proficiency}/${nextLevel.threshold}`, px + 70, curY + 36);
       } else {
@@ -149,7 +149,7 @@ export default class PanelSkill {
         default: effectText = `+${(effect * 100).toFixed(0)}%`;
       }
       ctx.fillStyle = PALETTE.textMuted;
-      ctx.font = '12px sans-serif';
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(effectText, px + pw - 15, curY + 36);
       ctx.textAlign = 'left';
@@ -158,7 +158,7 @@ export default class PanelSkill {
       if (skill.spiritCost > 0) {
         drawSpiritIcon(ctx, px + pw - 40, curY + 12, 9);
         ctx.fillStyle = PALETTE.spirit;
-        ctx.font = '12px sans-serif';
+        ctx.font = '14px sans-serif';
         ctx.textAlign = 'right';
         ctx.fillText(`${skill.spiritCost}`, px + pw - 15, curY + 18);
         ctx.textAlign = 'left';

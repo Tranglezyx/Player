@@ -68,7 +68,7 @@ export default class TopBar {
     // 地图名
     const mapName = MAPS[GameGlobal.databus.currentMapId]?.name || '青竹林';
     ctx.fillStyle = PALETTE.textHighlight;
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(`▶ ${mapName}（点击切换）`, padX, line1Y);
 
@@ -76,14 +76,14 @@ export default class TopBar {
     drawCultivationIcon(ctx, padX + 6, line2Y - 4, 10);
     const cultivPercent = Math.min(100, Math.floor((player.cultivation / player.maxCultivation) * 100));
     ctx.fillStyle = PALETTE.textMain;
-    ctx.font = '13px sans-serif';
+    ctx.font = '15px sans-serif';
     ctx.fillText(`修为: ${cultivPercent}%  (+${this.cultivationPerMin}/分)`, padX + 16, line2Y);
 
     // 灵石图标 + 灵石数量
     drawSpiritStoneIcon(ctx, padX + 6, line3Y - 4, 10);
     const paused = GameGlobal.databus.cultivationPaused;
     ctx.fillStyle = paused ? PALETTE.textMuted : PALETTE.spiritStone;
-    ctx.font = '13px sans-serif';
+    ctx.font = '15px sans-serif';
     ctx.fillText(`灵石: ${formatNumber(player.spiritStone)} (+${this.stonePerMin}/分)${paused ? ' [暂停]' : ''}`, padX + 16, line3Y);
 
     // 右侧：灵力条 + 等级
@@ -95,7 +95,7 @@ export default class TopBar {
 
     // 灵力标签
     ctx.fillStyle = PALETTE.textMuted;
-    ctx.font = '11px sans-serif';
+    ctx.font = '13px sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText('灵力', barAreaX + barW, barY - 4);
     ctx.textAlign = 'left';
@@ -104,11 +104,11 @@ export default class TopBar {
 
     // 等级信息
     ctx.fillStyle = PALETTE.textHighlight;
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText(`${player.realm}·${player.level}层`, w - padX, line2Y);
     ctx.fillStyle = PALETTE.textMuted;
-    ctx.font = '12px sans-serif';
+    ctx.font = '14px sans-serif';
     ctx.fillText(`Lv.${player.getGlobalLevel()}`, w - padX, line3Y);
     ctx.textAlign = 'left';
 

@@ -86,7 +86,7 @@ export default class PanelShop {
     const minutes = Math.floor((remaining % 3600) / 60);
 
     ctx.fillStyle = PALETTE.textMuted;
-    ctx.font = '13px sans-serif';
+    ctx.font = '15px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(`下次刷新: ${hours}h${minutes}m`, px + 15, py + 38);
 
@@ -106,7 +106,7 @@ export default class PanelShop {
       // 锁定图标区
       const lockColor = item.locked ? PALETTE.textHighlight : '#444';
       ctx.fillStyle = lockColor;
-      ctx.font = '13px sans-serif';
+      ctx.font = '15px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(item.locked ? '🔒 锁定' : '🔓 购买', px + pw - 15, curY + 16);
       ctx.textAlign = 'left';
@@ -114,8 +114,7 @@ export default class PanelShop {
       // 商品名 + 品质
       const nameColor = item.qualityIndex !== undefined ? getQualityColor(item.qualityIndex) : PALETTE.textMain;
       ctx.fillStyle = nameColor;
-      ctx.font = 'bold 14px sans-serif';
-      ctx.fillText(item.name, px + 15, curY + 17);
+      ctx.font = 'bold 16px sans-serif';
 
       if (item.qualityIndex !== undefined) {
         drawQualityBadge(ctx, px + 80, curY + 2, item.qualityIndex);
@@ -123,13 +122,13 @@ export default class PanelShop {
 
       // 描述
       ctx.fillStyle = PALETTE.textMuted;
-      ctx.font = '12px sans-serif';
+      ctx.font = '14px sans-serif';
       ctx.fillText(item.description || '', px + 15, curY + 35);
 
       // 价格
       const canAfford = player.spiritStone >= item.price;
       ctx.fillStyle = canAfford ? PALETTE.spiritStone : '#EF5350';
-      ctx.font = '13px sans-serif';
+      ctx.font = '15px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(formatNumber(item.price) + ' 灵石', px + pw - 15, curY + 38);
       ctx.textAlign = 'left';
@@ -139,14 +138,14 @@ export default class PanelShop {
 
     if (shopSystem.items.length === 0) {
       ctx.fillStyle = PALETTE.textMuted;
-      ctx.font = '14px sans-serif';
+      ctx.font = '16px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('暂无商品', px + pw / 2, listStartY + 30);
     }
 
     // 底部灵石余额
     ctx.fillStyle = PALETTE.spiritStone;
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(`持有灵石: ${formatNumber(player.spiritStone)}`, px + pw / 2, py + ph - 10);
 

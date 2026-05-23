@@ -20,6 +20,7 @@ export const SAFE_TOP = statusBarHeight + 4;
 export const TOP_BAR_H = 60;
 export const BOTTOM_BAR_H = 66;
 
-// 面板区域（全屏弹窗，留出顶部栏和底部栏空间）
-export const PANEL_Y = SAFE_TOP + TOP_BAR_H + 2;
-export const PANEL_H = windowInfo.screenHeight - PANEL_Y - BOTTOM_BAR_H - SAFE_BOTTOM;
+// 面板区域（弹窗居中，高度为中间区域 3/4）
+const middleArea = windowInfo.screenHeight - (SAFE_TOP + TOP_BAR_H + 2) - BOTTOM_BAR_H - SAFE_BOTTOM;
+export const PANEL_H = Math.floor(middleArea * 0.75);
+export const PANEL_Y = Math.floor(SAFE_TOP + TOP_BAR_H + 2 + (middleArea - PANEL_H) / 2);

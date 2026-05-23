@@ -37,7 +37,7 @@ export default class PanelBag {
     const itemH = 48;
     const listStartY = py + 120;
     const tapY = y - listStartY;
-    const tapIndex = Math.floor(tapY / (itemH + 2));
+    const tapIndex = Math.floor(tapY / (itemH + 6));
 
     if (tapIndex >= 0 && tapIndex < player.bag.length) {
       if (GameGlobal.databus.equipmentSystem) {
@@ -68,7 +68,7 @@ export default class PanelBag {
 
     // 已装备区域
     ctx.fillStyle = PALETTE.textMain;
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('已装备', contentX, py + 44);
 
@@ -89,7 +89,7 @@ export default class PanelBag {
 
         const color = getQualityColor(item.qualityIndex);
         ctx.fillStyle = color;
-        ctx.font = 'bold 13px sans-serif';
+        ctx.font = 'bold 15px sans-serif';
         ctx.fillText(item.name, contentX + 6, eqY + 2);
 
         drawQualityBadge(ctx, contentX + 90, eqY - 10, item.qualityIndex);
@@ -101,15 +101,15 @@ export default class PanelBag {
         ctx.strokeRect(contentX, eqY - 12, pw - 30, 22);
 
         ctx.fillStyle = '#666';
-        ctx.font = '13px sans-serif';
+        ctx.font = '15px sans-serif';
         ctx.fillText(`${slotNames[i]}: 空`, contentX + 6, eqY + 2);
       }
-      eqY += 26;
+      eqY += 32;
     });
 
     // 背包区域标题
     ctx.fillStyle = PALETTE.textMain;
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 16px sans-serif';
     ctx.fillText(`背包 (${player.bag.length}件，点击出售)`, contentX, eqY + 6);
 
     const listStartY = eqY + 18;
@@ -127,7 +127,7 @@ export default class PanelBag {
       ctx.fillRect(px + 5, curY, 3, itemH);
 
       ctx.fillStyle = qColor;
-      ctx.font = 'bold 14px sans-serif';
+      ctx.font = 'bold 16px sans-serif';
       ctx.fillText(item.name, px + 18, curY + 18);
 
       if (item.qualityIndex !== undefined) {
@@ -145,22 +145,22 @@ export default class PanelBag {
         }
       }
       ctx.fillStyle = PALETTE.textMuted;
-      ctx.font = '12px sans-serif';
+      ctx.font = '14px sans-serif';
       ctx.fillText(statText, px + 18, curY + 35);
 
       // 售价
       ctx.fillStyle = PALETTE.spiritStone;
-      ctx.font = '12px sans-serif';
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(`售 ${formatNumber(Math.floor(item.price * 0.5))}`, px + pw - 15, curY + 26);
       ctx.textAlign = 'left';
 
-      curY += itemH + 4;
+      curY += itemH + 6;
     });
 
     if (player.bag.length === 0) {
       ctx.fillStyle = PALETTE.textMuted;
-      ctx.font = '14px sans-serif';
+      ctx.font = '16px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('背包空空如也', px + pw / 2, listStartY + 30);
       ctx.textAlign = 'left';

@@ -89,7 +89,7 @@ export default class PanelMap {
       // 状态图标
       const icon = unlocked ? (isCurrent ? '▶' : '✅') : '🔒';
       ctx.fillStyle = isCurrent ? PALETTE.textHighlight : (unlocked ? PALETTE.textMain : '#666');
-      ctx.font = 'bold 14px sans-serif';
+      ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(icon, px + 14, curY + 15);
 
@@ -100,18 +100,18 @@ export default class PanelMap {
 
       // 地图名
       ctx.fillStyle = isCurrent ? PALETTE.textHighlight : (unlocked ? PALETTE.textMain : '#666');
-      ctx.font = isCurrent ? 'bold 14px sans-serif' : '14px sans-serif';
+      ctx.font = isCurrent ? 'bold 16px sans-serif' : '16px sans-serif';
       ctx.fillText(map.name, px + 52, curY + 15);
 
       // 等阶信息
       ctx.fillStyle = unlocked ? PALETTE.textMuted : '#555';
-      ctx.font = '12px sans-serif';
+      ctx.font = '14px sans-serif';
       const tierInfo = `等阶 ${map.tiers.join('~')}`;
       ctx.fillText(unlocked ? tierInfo : `Lv.${map.unlockLevel}解锁`, px + 52, curY + 30);
 
       // 描述（右侧）
       ctx.fillStyle = PALETTE.textMuted;
-      ctx.font = '12px sans-serif';
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(map.desc, px + pw - 14, curY + 30);
       ctx.textAlign = 'left';

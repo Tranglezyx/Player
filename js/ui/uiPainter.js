@@ -127,7 +127,7 @@ export function drawPanel(ctx, x, y, w, h, title) {
 
     // 标题文字
     ctx.fillStyle = PALETTE.textHighlight;
-    ctx.font = 'bold 18px sans-serif';
+    ctx.font = 'bold 20px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(title, x + w / 2, y + titleH / 2 + 2);
@@ -156,7 +156,7 @@ export function drawButton(ctx, x, y, w, h, label, active = false, disabled = fa
     ctx.fillStyle = PALETTE.btnText;
   }
 
-  ctx.font = 'bold 14px sans-serif';
+  ctx.font = 'bold 16px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(label, x + w / 2, y + h / 2 + (active ? 1 : 0));
@@ -167,7 +167,7 @@ export function drawButton(ctx, x, y, w, h, label, active = false, disabled = fa
 export function drawIconButton(ctx, x, y, size, icon, active = false) {
   drawRoundRect(ctx, x, y, size, size, 3, active ? PALETTE.btnBgActive : PALETTE.btnBg, PALETTE.uiBorder);
   ctx.fillStyle = active ? PALETTE.textHighlight : PALETTE.textMain;
-  ctx.font = 'bold 13px sans-serif';
+  ctx.font = 'bold 15px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(icon, x + size / 2, y + size / 2 + 1);
@@ -200,7 +200,7 @@ export function drawProgressBar(ctx, x, y, w, h, percent, color, bgColor = '#333
   // 文字
   if (showText) {
     ctx.fillStyle = PALETTE.textMain;
-    ctx.font = '12px sans-serif';
+    ctx.font = '14px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(showText, x + w / 2, y + h / 2 + 1);
@@ -278,8 +278,12 @@ export function drawSpiritIcon(ctx, cx, cy, size = 12) {
   // 高光
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.beginPath();
-  ctx.ellipse(-s * 0.15, -s * 0.2, s * 0.25, s * 0.4, 0, 0, Math.PI * 2);
+  ctx.save();
+  ctx.translate(-s * 0.15, -s * 0.2);
+  ctx.scale(1, 1.6);
+  ctx.arc(0, 0, s * 0.25, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
   ctx.restore();
 }
 
@@ -483,14 +487,14 @@ export function getQualityColor(qualityIndex) {
   return PALETTE.quality[Math.min(qualityIndex, PALETTE.quality.length - 1)]?.color || PALETTE.textMain;
 }
 
-export function drawQualityText(ctx, text, x, y, qualityIndex, font = '14px sans-serif') {
+export function drawQualityText(ctx, text, x, y, qualityIndex, font = '16px sans-serif') {
   ctx.fillStyle = getQualityColor(qualityIndex);
   ctx.font = font;
   ctx.textAlign = 'left';
   ctx.fillText(text, x, y);
 }
 
-export function drawTitleText(ctx, text, x, y, fontSize = 15) {
+export function drawTitleText(ctx, text, x, y, fontSize = 17) {
   ctx.fillStyle = PALETTE.textHighlight;
   ctx.font = `bold ${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
@@ -499,7 +503,7 @@ export function drawTitleText(ctx, text, x, y, fontSize = 15) {
 
 export function drawLabelValue(ctx, label, value, x, y, valueColor = PALETTE.textMain) {
   ctx.fillStyle = PALETTE.textMuted;
-  ctx.font = '13px sans-serif';
+  ctx.font = '15px sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText(label, x, y);
 
@@ -522,9 +526,9 @@ export function drawQualityBadge(ctx, x, y, qualityIndex) {
   if (!q) return;
 
   const text = q.name;
-  ctx.font = '11px sans-serif';
-  const tw = ctx.measureText(text).width + 10;
-  const th = 14;
+  ctx.font = '13px sans-serif';
+  const tw = ctx.measureText(text).width + 12;
+  const th = 16;
 
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   drawRoundRect(ctx, x, y, tw, th, 2, null, q.color);
@@ -565,7 +569,7 @@ export function drawMonsterHpBar(ctx, x, y, w, h, percent, name) {
   // 名字
   if (name) {
     ctx.fillStyle = PALETTE.textMain;
-    ctx.font = 'bold 12px sans-serif';
+    ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(name, x + w / 2, y - 6);
   }

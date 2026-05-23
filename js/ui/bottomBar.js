@@ -8,7 +8,6 @@ export default class BottomBar {
       { id: 'skill', label: '功法', x: 0, y: 0, w: 0, h: 0 },
       { id: 'bag', label: '背包', x: 0, y: 0, w: 0, h: 0 },
       { id: 'shop', label: '商店', x: 0, y: 0, w: 0, h: 0 },
-      { id: 'map', label: '地图', x: 0, y: 0, w: 0, h: 0 },
     ];
     this.activePanel = null;
     this.h = BOTTOM_BAR_H;
@@ -95,7 +94,7 @@ export default class BottomBar {
 
       // 标签（更靠下，与图标留出间距）
       ctx.fillStyle = isActive ? PALETTE.textHighlight : PALETTE.textMain;
-      ctx.font = isActive ? 'bold 13px sans-serif' : '13px sans-serif';
+      ctx.font = isActive ? 'bold 15px sans-serif' : '15px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(btn.label, bx + btnW / 2, by + this.h - 12);

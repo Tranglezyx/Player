@@ -1,4 +1,5 @@
 import './render';
+import { SAFE_TOP, TOP_BAR_H } from './render';
 import DataBus from './databus';
 import Cultivator from './entities/cultivator';
 import CombatSystem from './systems/combat';
@@ -153,6 +154,12 @@ export default class Main {
           applyOfflineRewards(GameGlobal.databus.lastOfflineReward);
           GameGlobal.databus.lastOfflineReward = null;
         }
+        return;
+      }
+
+      // top bar map name tap — open map panel
+      if (y >= SAFE_TOP && y <= SAFE_TOP + TOP_BAR_H / 2 && x < canvas.width * 0.55 && !this.getActivePanel()) {
+        this.handlePanelSwitch('map');
         return;
       }
 
@@ -322,16 +329,16 @@ export default class Main {
     ctx.strokeRect(bx, by, bw, bh);
 
     ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 18px sans-serif';
+    ctx.font = 'bold 20px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('离线收益', bx + bw / 2, by + 30);
 
     ctx.fillStyle = '#F5E6C8';
-    ctx.font = '14px sans-serif';
+    ctx.font = '16px sans-serif';
     ctx.fillText(`离线 ${r.totalMin} 分钟`, bx + bw / 2, by + 55);
 
     ctx.fillStyle = '#00BCD4';
-    ctx.font = '14px sans-serif';
+    ctx.font = '16px sans-serif';
     ctx.fillText(`灵石 +${r.stone.toLocaleString()}`, bx + bw / 2, by + 80);
 
     ctx.fillStyle = '#9C27B0';
@@ -343,7 +350,7 @@ export default class Main {
     }
 
     ctx.fillStyle = '#999';
-    ctx.font = '13px sans-serif';
+    ctx.font = '15px sans-serif';
     ctx.fillText('点击屏幕领取', bx + bw / 2, by + 160);
 
     ctx.restore();

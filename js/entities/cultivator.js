@@ -192,10 +192,14 @@ export default class Cultivator {
     ctx.save();
 
     // 阴影
+    ctx.save();
+    ctx.translate(cx + 32, cy + h + 4);
+    ctx.scale(1, 0.25);
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
-    ctx.ellipse(cx + 32, cy + h + 4, 24, 6, 0, 0, Math.PI * 2);
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 
     // 境界外观对照表
     const realmIdx = this.realmIndex;
@@ -338,7 +342,7 @@ export default class Cultivator {
 
     // 境界标签
     ctx.fillStyle = '#F5E6C8';
-    ctx.font = 'bold 12px sans-serif';
+    ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(`${this.realm}·${this.level}层`, cx + 32, cy + h + 14);
 
