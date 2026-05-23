@@ -14,6 +14,7 @@ export default class CombatSystem {
     this.updateMonsterSpawn(dt);
     this.updateCombat(dt);
     this.updateDamageNumbers(dt);
+    this.updateMonsterDeath(dt);
   }
 
   updateMonsterSpawn(dt) {
@@ -42,7 +43,7 @@ export default class CombatSystem {
   }
 
   updateCombat(dt) {
-    if (!this.currentMonster || !this.currentMonster.isActive) return;
+    if (!this.currentMonster || !this.currentMonster.isActive || this.currentMonster.state === 'dead') return;
 
     const player = GameGlobal.databus.cultivator;
 
@@ -56,11 +57,21 @@ export default class CombatSystem {
     // active skills: cast if enough spirit
     const activeSkills = player.outerSkills.filter(s => s.type === 'active');
     activeSkills.forEach(skill => {
-      if (player.spirit >= skill.spiritCost && this.currentMonster && this.currentMonster.isActive) {
+      if (player.spirit >= skill.spiritCost && this.currentMonster && this.currentMonster.isActive && this.currentMonster.state !== 'dead') {
         player.spirit -= skill.spiritCost;
         this.performSkillAttack(player, this.currentMonster, skill);
       }
     });
+  }
+
+  updateMonsterDeath(dt) {
+    if (this.currentMonster && this.currentMonster.state === 'dead') {
+      this.currentMonster.deathTimer -= dt;
+      if (this.currentMonster.deathTimer <= 0) {
+        this.currentMonster.isActive = false;
+        this.currentMonster = null;
+      }
+    }
   }
 
   performNormalAttack(player, monster) {
@@ -100,9 +111,9 @@ export default class CombatSystem {
   }
 
   checkMonsterDeath(monster) {
-    if (monster.hp <= 0) {
-      monster.isActive = false;
+    if (monster.hp <= 0 && monster.state !== 'dead') {
       monster.state = 'dead';
+      monster.deathTimer = 0.5;
 
       const player = GameGlobal.databus.cultivator;
       let stoneReward = monster.getStoneReward();
@@ -118,7 +129,7 @@ export default class CombatSystem {
       player.spirit = Math.min(player.maxSpirit, player.spirit + 5);
 
       GameGlobal.databus.totalKills++;
-      this.currentMonster = null;
+      // 延迟清理：由 updateMonsterDeath 在 deathTimer 结束后处理
     }
   }
 

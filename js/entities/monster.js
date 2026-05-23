@@ -43,6 +43,7 @@ export default class Monster {
     this.isAnimating = false;
     this.bobOffset = 0;
     this.bobTimer = 0;
+    this.deathTimer = 0;
   }
 
   init(tier) {
@@ -71,14 +72,16 @@ export default class Monster {
     this.isAnimating = false;
     this.bobOffset = 0;
     this.bobTimer = Math.random() * Math.PI * 2;
+    this.deathTimer = 0;
   }
 
   takeDamage(damage) {
+    if (this.state === 'dead') return;
     this.hp -= damage;
     this.state = 'hurt';
     if (this.hurtTimer) clearTimeout(this.hurtTimer);
     this.hurtTimer = setTimeout(() => {
-      if (this.isActive) this.state = 'idle';
+      if (this.isActive && this.state !== 'dead') this.state = 'idle';
     }, 200);
   }
 
