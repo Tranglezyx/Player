@@ -1,6 +1,16 @@
 import { formatNumber } from '../utils/number';
 import { QUALITIES } from '../config/equipment';
 import { PANEL_Y, PANEL_H } from '../render';
+import {
+  PALETTE,
+  drawPanel,
+  drawListItem,
+  drawQualityBadge,
+  drawButton,
+  drawAttackIcon,
+  drawSpiritIcon,
+  getQualityColor,
+} from './uiPainter';
 
 export default class PanelBag {
   constructor() {
@@ -24,8 +34,8 @@ export default class PanelBag {
     }
 
     const player = GameGlobal.databus.cultivator;
-    const itemH = 44;
-    const listStartY = py + 110;
+    const itemH = 48;
+    const listStartY = py + 120;
     const tapY = y - listStartY;
     const tapIndex = Math.floor(tapY / (itemH + 2));
 
@@ -50,68 +60,107 @@ export default class PanelBag {
 
     ctx.save();
 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillStyle = PALETTE.overlay;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawPanel(ctx, px, py, pw, ph, '背包');
 
-    ctx.fillStyle = 'rgba(26, 26, 46, 0.97)';
-    ctx.fillRect(px, py, pw, ph);
-    ctx.strokeStyle = '#C9A96E';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(px, py, pw, ph);
+    const contentX = px + 15;
 
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('背包', px + pw / 2, py + 22);
-
+    // 已装备区域
+    ctx.fillStyle = PALETTE.textMain;
+    ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#F5E6C8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('已装备:', px + 15, py + 42);
+    ctx.fillText('已装备', contentX, py + 44);
 
     const slots = ['weapon', 'helmet', 'armor', 'boots', 'accessory'];
     const slotNames = ['武器', '头盔', '衣服', '鞋子', '饰品'];
+    const slotIcons = ['attack', 'spirit', 'spirit', 'attack', 'attack'];
     let eqY = py + 58;
 
     slots.forEach((slot, i) => {
       const item = player.equipment[slot];
-      const info = item ? `${item.name}` : '空';
-      const color = item ? (QUALITIES[item.qualityIndex]?.color || '#CCC') : '#666';
-      ctx.fillStyle = color;
-      ctx.font = '11px sans-serif';
-      ctx.fillText(`${slotNames[i]}: ${info}`, px + 20, eqY);
-      eqY += 16;
+      if (item) {
+        // 装备格背景
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.fillRect(contentX, eqY - 12, pw - 30, 22);
+        ctx.strokeStyle = getQualityColor(item.qualityIndex);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(contentX, eqY - 12, pw - 30, 22);
+
+        const color = getQualityColor(item.qualityIndex);
+        ctx.fillStyle = color;
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(item.name, contentX + 6, eqY + 2);
+
+        drawQualityBadge(ctx, contentX + 90, eqY - 10, item.qualityIndex);
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
+        ctx.fillRect(contentX, eqY - 12, pw - 30, 22);
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(contentX, eqY - 12, pw - 30, 22);
+
+        ctx.fillStyle = '#666';
+        ctx.font = '13px sans-serif';
+        ctx.fillText(`${slotNames[i]}: 空`, contentX + 6, eqY + 2);
+      }
+      eqY += 26;
     });
 
-    ctx.fillStyle = '#F5E6C8';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`背包 (${player.bag.length}件，点击出售):`, px + 15, eqY + 6);
+    // 背包区域标题
+    ctx.fillStyle = PALETTE.textMain;
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(`背包 (${player.bag.length}件，点击出售)`, contentX, eqY + 6);
 
-    const listStartY = eqY + 22;
+    const listStartY = eqY + 18;
     let curY = listStartY;
-    const itemH = 44;
+    const itemH = 48;
 
     player.bag.forEach((item, i) => {
       if (curY > py + ph - 20) return;
 
-      const qColor = item.qualityIndex !== undefined ? QUALITIES[item.qualityIndex]?.color || '#CCC' : '#CCC';
-      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)';
-      ctx.fillRect(px + 5, curY, pw - 10, itemH);
+      const qColor = item.qualityIndex !== undefined ? getQualityColor(item.qualityIndex) : '#CCC';
+      drawListItem(ctx, px + 5, curY, pw - 10, itemH, i);
+
+      // 左侧品质竖条
+      ctx.fillStyle = qColor;
+      ctx.fillRect(px + 5, curY, 3, itemH);
 
       ctx.fillStyle = qColor;
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(item.name, px + 18, curY + 18);
+
+      if (item.qualityIndex !== undefined) {
+        drawQualityBadge(ctx, px + 100, curY + 2, item.qualityIndex);
+      }
+
+      // 属性简述
+      let statText = '';
+      if (item.stats) {
+        const statEntries = Object.entries(item.stats);
+        if (statEntries.length > 0) {
+          const [k, v] = statEntries[0];
+          const statLabels = { attack: '攻击', maxSpirit: '灵力上限', spiritRegen: '灵力回复', attackSpeed: '攻速', critRate: '暴击' };
+          statText = `${statLabels[k] || k} +${v}`;
+        }
+      }
+      ctx.fillStyle = PALETTE.textMuted;
       ctx.font = '12px sans-serif';
-      ctx.fillText(item.name, px + 15, curY + 18);
+      ctx.fillText(statText, px + 18, curY + 35);
 
-      ctx.fillStyle = '#999';
-      ctx.font = '10px sans-serif';
-      ctx.fillText(`售价: ${formatNumber(Math.floor(item.price * 0.5))}`, px + 15, curY + 35);
+      // 售价
+      ctx.fillStyle = PALETTE.spiritStone;
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`售 ${formatNumber(Math.floor(item.price * 0.5))}`, px + pw - 15, curY + 26);
+      ctx.textAlign = 'left';
 
-      curY += itemH + 2;
+      curY += itemH + 4;
     });
 
     if (player.bag.length === 0) {
-      ctx.fillStyle = '#666';
-      ctx.font = '12px sans-serif';
+      ctx.fillStyle = PALETTE.textMuted;
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('背包空空如也', px + pw / 2, listStartY + 30);
       ctx.textAlign = 'left';

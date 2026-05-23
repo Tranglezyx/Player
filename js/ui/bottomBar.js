@@ -1,4 +1,5 @@
-import { BOTTOM_BAR_H } from '../render';
+import { BOTTOM_BAR_H, SAFE_BOTTOM } from '../render';
+import { PALETTE, drawNavIcon, drawRoundRect } from './uiPainter';
 
 export default class BottomBar {
   constructor() {
@@ -14,7 +15,7 @@ export default class BottomBar {
   }
 
   get y() {
-    return canvas.height - this.h;
+    return canvas.height - this.h - SAFE_BOTTOM;
   }
 
   getTop() {
@@ -53,43 +54,54 @@ export default class BottomBar {
 
     ctx.save();
 
-    // Background
-    ctx.fillStyle = 'rgba(26, 26, 46, 0.95)';
+    // 背景
+    ctx.fillStyle = PALETTE.uiBgTransparent;
     ctx.fillRect(0, this.y, canvas.width, this.h);
 
-    ctx.fillStyle = '#C9A96E';
+    // 顶部边框线
+    ctx.fillStyle = PALETTE.uiBorder;
     ctx.fillRect(0, this.y, canvas.width, 2);
 
-    // Buttons
+    // 按钮
     const w = canvas.width;
     const btnW = w / this.buttons.length;
 
     this.buttons.forEach((btn, i) => {
       const bx = i * btnW;
       const by = this.y + 2;
+      const isActive = this.activePanel === btn.id;
 
-      // button background
-      ctx.fillStyle = this.activePanel === btn.id ? 'rgba(201, 169, 110, 0.3)' : 'transparent';
-      ctx.fillRect(bx + 2, by + 2, btnW - 4, this.h - 5);
-
-      // border between buttons
-      if (i > 0) {
-        ctx.fillStyle = '#C9A96E';
-        ctx.fillRect(bx, by + 8, 1, this.h - 18);
+      // 激活态背景（略微留边距，更宽松）
+      if (isActive) {
+        ctx.fillStyle = 'rgba(201, 169, 110, 0.12)';
+        ctx.fillRect(bx + 4, by + 3, btnW - 8, this.h - 7);
+        ctx.strokeStyle = PALETTE.uiBorder;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx + 6, by + 5, btnW - 12, this.h - 11);
       }
 
-      // icon placeholder + label
-      const iconArea = { x: bx + btnW / 2 - 12, y: by + 4, w: 24, h: 24 };
-      ctx.fillStyle = this.activePanel === btn.id ? '#FFD700' : '#C9A96E';
-      ctx.fillRect(iconArea.x, iconArea.y, iconArea.w, iconArea.h);
+      // 分隔线（更淡更细，上留白更多）
+      if (i > 0) {
+        ctx.fillStyle = 'rgba(201, 169, 110, 0.12)';
+        ctx.fillRect(bx, by + 14, 1, this.h - 28);
+      }
 
-      // label
-      ctx.fillStyle = this.activePanel === btn.id ? '#FFD700' : '#F5E6C8';
-      ctx.font = '10px sans-serif';
+      // 像素风格图标
+      const iconSize = 24;
+      const iconX = bx + btnW / 2 - iconSize / 2;
+      const iconY = by + 8;
+      const iconColor = isActive ? PALETTE.textHighlight : PALETTE.uiBorder;
+      drawNavIcon(ctx, btn.id, iconX, iconY, iconSize, iconColor);
+
+      // 标签（更靠下，与图标留出间距）
+      ctx.fillStyle = isActive ? PALETTE.textHighlight : PALETTE.textMain;
+      ctx.font = isActive ? 'bold 13px sans-serif' : '13px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(btn.label, bx + btnW / 2, by + this.h - 6);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(btn.label, bx + btnW / 2, by + this.h - 12);
     });
 
+    ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
     ctx.restore();
   }

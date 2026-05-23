@@ -1,5 +1,11 @@
 import MAPS from '../config/maps';
 import { PANEL_Y, PANEL_H } from '../render';
+import {
+  PALETTE,
+  drawPanel,
+  drawListItem,
+  drawMapIcon,
+} from './uiPainter';
 
 export default class PanelMap {
   constructor() {
@@ -25,8 +31,8 @@ export default class PanelMap {
 
     const player = GameGlobal.databus.cultivator;
     const globalLevel = player.getGlobalLevel();
-    const listStartY = py + 40;
-    const itemH = 38;
+    const listStartY = py + 44;
+    const itemH = 40;
 
     const tapY = y - listStartY;
     const tapIndex = Math.floor(tapY / (itemH + 2));
@@ -56,51 +62,61 @@ export default class PanelMap {
 
     ctx.save();
 
-    // overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillStyle = PALETTE.overlay;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawPanel(ctx, px, py, pw, ph, '选择修炼地图');
 
-    // panel
-    ctx.fillStyle = 'rgba(26, 26, 46, 0.97)';
-    ctx.fillRect(px, py, pw, ph);
-    ctx.strokeStyle = '#C9A96E';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(px, py, pw, ph);
-
-    // title
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('选择修炼地图', px + pw / 2, py + 22);
-
-    // maps
-    const listStartY = py + 44;
+    const listStartY = py + 48;
     let curY = listStartY;
 
     MAPS.forEach((map, i) => {
       if (curY > py + ph - 20) return;
 
-      const itemH = 34;
+      const itemH = 38;
       const unlocked = globalLevel >= map.unlockLevel;
       const isCurrent = currentMapId === map.id;
 
-      ctx.fillStyle = isCurrent ? 'rgba(201, 169, 110, 0.2)' : 'rgba(255,255,255,0.03)';
-      ctx.fillRect(px + 5, curY, pw - 10, itemH);
+      if (isCurrent) {
+        ctx.fillStyle = 'rgba(201, 169, 110, 0.15)';
+        ctx.fillRect(px + 5, curY, pw - 10, itemH);
+        ctx.strokeStyle = PALETTE.uiBorder;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 5, curY, pw - 10, itemH);
+      } else {
+        drawListItem(ctx, px + 5, curY, pw - 10, itemH, i);
+      }
 
+      // 状态图标
       const icon = unlocked ? (isCurrent ? '▶' : '✅') : '🔒';
-      ctx.fillStyle = unlocked ? '#F5E6C8' : '#666';
-      ctx.font = '11px sans-serif';
+      ctx.fillStyle = isCurrent ? PALETTE.textHighlight : (unlocked ? PALETTE.textMain : '#666');
+      ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`${icon} ${map.name}`, px + 15, curY + 14);
+      ctx.fillText(icon, px + 14, curY + 15);
 
-      ctx.fillStyle = '#999';
-      ctx.font = '10px sans-serif';
+      // 地图图标
+      if (unlocked) {
+        drawMapIcon(ctx, px + 36, curY + 12, 12);
+      }
+
+      // 地图名
+      ctx.fillStyle = isCurrent ? PALETTE.textHighlight : (unlocked ? PALETTE.textMain : '#666');
+      ctx.font = isCurrent ? 'bold 14px sans-serif' : '14px sans-serif';
+      ctx.fillText(map.name, px + 52, curY + 15);
+
+      // 等阶信息
+      ctx.fillStyle = unlocked ? PALETTE.textMuted : '#555';
+      ctx.font = '12px sans-serif';
       const tierInfo = `等阶 ${map.tiers.join('~')}`;
-      ctx.fillText(unlocked ? tierInfo : `Lv.${map.unlockLevel}解锁`, px + 15, curY + 28);
+      ctx.fillText(unlocked ? tierInfo : `Lv.${map.unlockLevel}解锁`, px + 52, curY + 30);
 
-      ctx.fillText(map.desc, px + 120, curY + 28);
+      // 描述（右侧）
+      ctx.fillStyle = PALETTE.textMuted;
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(map.desc, px + pw - 14, curY + 30);
+      ctx.textAlign = 'left';
 
-      curY += itemH + 2;
+      curY += itemH + 3;
     });
 
     ctx.restore();

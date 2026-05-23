@@ -36,7 +36,7 @@ export default class FloatingText {
       ctx.save();
       ctx.globalAlpha = Math.max(0, t.alpha);
       ctx.fillStyle = t.color;
-      ctx.font = 'bold 14px sans-serif';
+      ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'center';
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 2;

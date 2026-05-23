@@ -1,5 +1,13 @@
 import { PROFICIENCY_LEVELS } from '../config/outerSkills';
 import { PANEL_Y, PANEL_H } from '../render';
+import {
+  PALETTE,
+  drawPanel,
+  drawListItem,
+  drawQualityBadge,
+  drawSpiritIcon,
+  getQualityColor,
+} from './uiPainter';
 
 export default class PanelSkill {
   constructor() {
@@ -23,9 +31,9 @@ export default class PanelSkill {
       return false;
     }
 
-    const tabY = py + 30;
+    const tabY = py + 42;
     const tabW = pw / 2;
-    if (y >= tabY && y <= tabY + 30) {
+    if (y >= tabY && y <= tabY + 32) {
       if (x < px + tabW) this.tab = 'inner';
       else this.tab = 'outer';
       return true;
@@ -46,41 +54,44 @@ export default class PanelSkill {
 
     ctx.save();
 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillStyle = PALETTE.overlay;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawPanel(ctx, px, py, pw, ph, '功法');
 
-    ctx.fillStyle = 'rgba(26, 26, 46, 0.97)';
-    ctx.fillRect(px, py, pw, ph);
-    ctx.strokeStyle = '#C9A96E';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(px, py, pw, ph);
-
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('功法', px + pw / 2, py + 22);
-
+    // 标签页
     const tabW = pw / 2;
-    const tabY = py + 30;
-    ctx.fillStyle = this.tab === 'inner' ? '#C9A96E' : '#444';
-    ctx.fillRect(px, tabY, tabW, 28);
-    ctx.fillStyle = '#FFF';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('心法', px + tabW / 2, tabY + 18);
+    const tabY = py + 42;
+    const tabH = 30;
 
-    ctx.fillStyle = this.tab === 'outer' ? '#C9A96E' : '#444';
-    ctx.fillRect(px + tabW, tabY, tabW, 28);
-    ctx.fillStyle = '#FFF';
-    ctx.fillText('术法', px + tabW + tabW / 2, tabY + 18);
+    // 心法标签
+    const innerActive = this.tab === 'inner';
+    ctx.fillStyle = innerActive ? 'rgba(201, 169, 110, 0.25)' : 'rgba(255,255,255,0.03)';
+    ctx.fillRect(px, tabY, tabW, tabH);
+    ctx.fillStyle = innerActive ? PALETTE.uiBorder : '#666';
+    ctx.fillRect(px, tabY + tabH - 2, tabW, 2);
+    ctx.fillStyle = innerActive ? PALETTE.textHighlight : PALETTE.textMuted;
+    ctx.font = innerActive ? 'bold 14px sans-serif' : '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('心法', px + tabW / 2, tabY + 20);
 
-    const listStartY = tabY + 40;
+    // 术法标签
+    const outerActive = this.tab === 'outer';
+    ctx.fillStyle = 'rgba(201, 169, 110, 0.25)';
+    ctx.fillRect(px + tabW, tabY, tabW, tabH);
+    ctx.fillStyle = outerActive ? PALETTE.uiBorder : '#666';
+    ctx.fillRect(px + tabW, tabY + tabH - 2, tabW, 2);
+    ctx.fillStyle = outerActive ? PALETTE.textHighlight : PALETTE.textMuted;
+    ctx.font = outerActive ? 'bold 14px sans-serif' : '14px sans-serif';
+    ctx.fillText('术法', px + tabW + tabW / 2, tabY + 20);
+
+    const listStartY = tabY + tabH + 8;
     let curY = listStartY;
 
     const skills = this.tab === 'inner' ? player.innerSkills : player.outerSkills;
 
     if (skills.length === 0) {
-      ctx.fillStyle = '#666';
-      ctx.font = '12px sans-serif';
+      ctx.fillStyle = PALETTE.textMuted;
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('暂未习得功法，突破境界可解锁', px + pw / 2, curY + 40);
       ctx.textAlign = 'left';
@@ -92,30 +103,38 @@ export default class PanelSkill {
     skills.forEach((skill, i) => {
       if (curY > py + ph - 20) return;
 
-      const itemH = 50;
-      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)';
-      ctx.fillRect(px + 5, curY, pw - 10, itemH);
+      const itemH = 56;
+      drawListItem(ctx, px + 5, curY, pw - 10, itemH, i);
 
-      ctx.fillStyle = '#F5E6C8';
-      ctx.font = 'bold 13px sans-serif';
+      // 功法名称 + 品质色
+      const nameColor = skill.proficiencyLevel >= 3 ? PALETTE.quality[4].color : PALETTE.textMain;
+      ctx.fillStyle = nameColor;
+      ctx.font = 'bold 14px sans-serif';
       ctx.fillText(skill.name, px + 15, curY + 18);
 
+      // 类型标签
       const typeLabels = { inner: '心法', active: '主动', passive: '被动', aura: '光环' };
       const typeLabel = typeLabels[skill.type] || typeLabels.inner;
-      ctx.fillStyle = skill.type === 'active' ? '#42A5F5' : '#4CAF50';
-      ctx.font = '10px sans-serif';
-      ctx.fillText(`[${typeLabel}]`, px + 15, curY + 35);
+      let typeColor = '#4CAF50';
+      if (skill.type === 'active') typeColor = '#42A5F5';
+      if (skill.type === 'aura') typeColor = PALETTE.textHighlight;
 
+      ctx.fillStyle = typeColor;
+      ctx.font = '12px sans-serif';
+      ctx.fillText(`[${typeLabel}]`, px + 15, curY + 36);
+
+      // 熟练度
       const profInfo = skill.proficiencyName;
       const nextLevel = PROFICIENCY_LEVELS[skill.proficiencyLevel + 1];
-      ctx.fillStyle = '#FFD700';
-      ctx.font = '10px sans-serif';
+      ctx.fillStyle = PALETTE.textHighlight;
+      ctx.font = '12px sans-serif';
       if (nextLevel) {
-        ctx.fillText(`${profInfo} ${skill.proficiency}/${nextLevel.threshold}`, px + 80, curY + 35);
+        ctx.fillText(`${profInfo} ${skill.proficiency}/${nextLevel.threshold}`, px + 70, curY + 36);
       } else {
-        ctx.fillText(`${profInfo} (MAX)`, px + 80, curY + 35);
+        ctx.fillText(`${profInfo} (MAX)`, px + 70, curY + 36);
       }
 
+      // 效果值
       const effect = skill.baseEffect * skill.getMultiplier();
       let effectText = '';
       switch (skill.effectType) {
@@ -129,15 +148,23 @@ export default class PanelSkill {
         case 'attackSpeed': effectText = `攻速+${(effect * 100).toFixed(0)}%`; break;
         default: effectText = `+${(effect * 100).toFixed(0)}%`;
       }
-      ctx.fillText(effectText, px + pw - 120, curY + 35);
+      ctx.fillStyle = PALETTE.textMuted;
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(effectText, px + pw - 15, curY + 36);
+      ctx.textAlign = 'left';
 
+      // 灵力消耗（主动技能）
       if (skill.spiritCost > 0) {
-        ctx.fillStyle = '#42A5F5';
-        ctx.font = '10px sans-serif';
-        ctx.fillText(`灵力${skill.spiritCost}`, px + pw - 120, curY + 18);
+        drawSpiritIcon(ctx, px + pw - 40, curY + 12, 9);
+        ctx.fillStyle = PALETTE.spirit;
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${skill.spiritCost}`, px + pw - 15, curY + 18);
+        ctx.textAlign = 'left';
       }
 
-      curY += itemH + 2;
+      curY += itemH + 4;
     });
 
     ctx.restore();

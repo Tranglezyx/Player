@@ -52,7 +52,7 @@ export default class DamageNumber {
     ctx.save();
     ctx.globalAlpha = Math.max(0, this.alpha);
     ctx.fillStyle = this.color;
-    const fontSize = this.isCrit ? 18 : 14;
+    const fontSize = this.isCrit ? 20 : 16;
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.strokeStyle = '#000';

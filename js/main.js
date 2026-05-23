@@ -225,6 +225,14 @@ export default class Main {
     // shop timer
     bus.shopSystem.update(dt);
 
+    // cultivator update (particles, breath)
+    bus.cultivator.update(dt);
+
+    // monster update (bobbing, particles)
+    if (bus.combatSystem.currentMonster) {
+      bus.combatSystem.currentMonster.update(dt);
+    }
+
     // floating texts
     this.floatingText.update(dt);
 
@@ -314,16 +322,16 @@ export default class Main {
     ctx.strokeRect(bx, by, bw, bh);
 
     ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 18px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('离线收益', bx + bw / 2, by + 30);
 
     ctx.fillStyle = '#F5E6C8';
-    ctx.font = '13px sans-serif';
+    ctx.font = '14px sans-serif';
     ctx.fillText(`离线 ${r.totalMin} 分钟`, bx + bw / 2, by + 55);
 
     ctx.fillStyle = '#00BCD4';
-    ctx.font = '12px sans-serif';
+    ctx.font = '14px sans-serif';
     ctx.fillText(`灵石 +${r.stone.toLocaleString()}`, bx + bw / 2, by + 80);
 
     ctx.fillStyle = '#9C27B0';
@@ -335,7 +343,7 @@ export default class Main {
     }
 
     ctx.fillStyle = '#999';
-    ctx.font = '11px sans-serif';
+    ctx.font = '13px sans-serif';
     ctx.fillText('点击屏幕领取', bx + bw / 2, by + 160);
 
     ctx.restore();

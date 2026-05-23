@@ -1,5 +1,14 @@
 import { formatNumber } from '../utils/number';
 import { PANEL_Y, PANEL_H } from '../render';
+import {
+  PALETTE,
+  drawPanel,
+  drawListItem,
+  drawButton,
+  drawIconButton,
+  drawQualityBadge,
+  getQualityColor,
+} from './uiPainter';
 
 export default class PanelShop {
   constructor() {
@@ -22,10 +31,10 @@ export default class PanelShop {
       return false;
     }
 
-    const refreshBtnY = py + 32;
-    const refreshBtnH = 24;
+    const refreshBtnY = py + 38;
+    const refreshBtnH = 26;
     const refreshBtnX = px + pw - 100;
-    const refreshBtnW = 85;
+    const refreshBtnW = 90;
 
     if (x >= refreshBtnX && x <= refreshBtnX + refreshBtnW && y >= refreshBtnY && y <= refreshBtnY + refreshBtnH) {
       if (GameGlobal.databus.shopSystem) {
@@ -34,8 +43,8 @@ export default class PanelShop {
       return true;
     }
 
-    const listStartY = py + 65;
-    const itemH = 52;
+    const listStartY = py + 72;
+    const itemH = 56;
     const shopSystem = GameGlobal.databus.shopSystem;
     if (!shopSystem) return true;
 
@@ -43,7 +52,7 @@ export default class PanelShop {
     const tapIndex = Math.floor(tapY / (itemH + 2));
 
     if (tapIndex >= 0 && tapIndex < shopSystem.items.length) {
-      if (x > px + pw - 30) {
+      if (x > px + pw - 34) {
         shopSystem.toggleLock(tapIndex);
       } else {
         shopSystem.buy(tapIndex);
@@ -67,75 +76,79 @@ export default class PanelShop {
 
     ctx.save();
 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillStyle = PALETTE.overlay;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawPanel(ctx, px, py, pw, ph, '商店');
 
-    ctx.fillStyle = 'rgba(26, 26, 46, 0.97)';
-    ctx.fillRect(px, py, pw, ph);
-    ctx.strokeStyle = '#C9A96E';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(px, py, pw, ph);
-
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('商店', px + pw / 2, py + 22);
-
+    // 刷新倒计时 + 手动刷新按钮
     const remaining = shopSystem.getRemainingTime();
     const hours = Math.floor(remaining / 3600);
     const minutes = Math.floor((remaining % 3600) / 60);
-    ctx.fillStyle = '#999';
-    ctx.font = '11px sans-serif';
+
+    ctx.fillStyle = PALETTE.textMuted;
+    ctx.font = '13px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`刷新倒计时: ${hours}h${minutes}m`, px + 15, py + 48);
+    ctx.fillText(`下次刷新: ${hours}h${minutes}m`, px + 15, py + 38);
 
     const refreshCost = 50 * (player.realmIndex + 1) * (1 + shopSystem.manualRefreshCount * 0.2);
-    ctx.fillText(`手动刷新 ${formatNumber(Math.floor(refreshCost))}灵石`, px + 15, py + 62);
+    drawButton(ctx, px + pw - 100, py + 30, 90, 24, `刷新 ${formatNumber(Math.floor(refreshCost))}`, false, false);
 
-    ctx.strokeStyle = '#C9A96E';
-    ctx.strokeRect(px + pw - 105, py + 46, 90, 22);
-
-    const listStartY = py + 75;
+    // 商品列表
+    const listStartY = py + 68;
     let curY = listStartY;
 
     shopSystem.items.forEach((item, i) => {
-      if (curY > py + ph - 20) return;
+      if (curY > py + ph - 24) return;
 
-      const itemH = 50;
-      ctx.fillStyle = item.locked ? 'rgba(201, 169, 110, 0.15)' : 'rgba(255,255,255,0.04)';
-      ctx.fillRect(px + 5, curY, pw - 10, itemH);
+      const itemH = 54;
+      drawListItem(ctx, px + 5, curY, pw - 10, itemH, i, item.locked);
 
-      ctx.fillStyle = item.locked ? '#FFD700' : '#F5E6C8';
-      ctx.font = '12px sans-serif';
+      // 锁定图标区
+      const lockColor = item.locked ? PALETTE.textHighlight : '#444';
+      ctx.fillStyle = lockColor;
+      ctx.font = '13px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(item.locked ? '🔒 锁定' : '🔓 购买', px + pw - 15, curY + 16);
       ctx.textAlign = 'left';
+
+      // 商品名 + 品质
+      const nameColor = item.qualityIndex !== undefined ? getQualityColor(item.qualityIndex) : PALETTE.textMain;
+      ctx.fillStyle = nameColor;
+      ctx.font = 'bold 14px sans-serif';
       ctx.fillText(item.name, px + 15, curY + 17);
 
-      ctx.fillStyle = '#00BCD4';
-      ctx.font = '11px sans-serif';
-      ctx.fillText(formatNumber(item.price) + '灵石', px + pw - 75, curY + 17);
+      if (item.qualityIndex !== undefined) {
+        drawQualityBadge(ctx, px + 80, curY + 2, item.qualityIndex);
+      }
 
-      ctx.fillStyle = '#999';
-      ctx.font = '10px sans-serif';
+      // 描述
+      ctx.fillStyle = PALETTE.textMuted;
+      ctx.font = '12px sans-serif';
       ctx.fillText(item.description || '', px + 15, curY + 35);
 
-      ctx.fillStyle = item.locked ? '#FFD700' : '#666';
-      ctx.font = '11px sans-serif';
-      ctx.fillText(item.locked ? '锁定' : '点击购买', px + 15, curY + 48);
+      // 价格
+      const canAfford = player.spiritStone >= item.price;
+      ctx.fillStyle = canAfford ? PALETTE.spiritStone : '#EF5350';
+      ctx.font = '13px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(formatNumber(item.price) + ' 灵石', px + pw - 15, curY + 38);
+      ctx.textAlign = 'left';
 
-      curY += itemH + 2;
+      curY += itemH + 4;
     });
 
     if (shopSystem.items.length === 0) {
-      ctx.fillStyle = '#666';
-      ctx.font = '12px sans-serif';
+      ctx.fillStyle = PALETTE.textMuted;
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('暂无商品', px + pw / 2, listStartY + 30);
     }
 
-    ctx.fillStyle = '#00BCD4';
-    ctx.font = '12px sans-serif';
+    // 底部灵石余额
+    ctx.fillStyle = PALETTE.spiritStone;
+    ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`灵石: ${formatNumber(player.spiritStone)}`, px + pw / 2, py + ph - 8);
+    ctx.fillText(`持有灵石: ${formatNumber(player.spiritStone)}`, px + pw / 2, py + ph - 10);
 
     ctx.textAlign = 'left';
     ctx.restore();

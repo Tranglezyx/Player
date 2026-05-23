@@ -2,6 +2,10 @@ import Sprite from '../base/sprite';
 import REALMS from '../config/realms';
 import INNER_SKILLS from '../config/innerSkills';
 import { OUTER_SKILLS } from '../config/outerSkills';
+import {
+  drawBreakthroughAura,
+  drawSpiritParticle,
+} from '../ui/uiPainter';
 
 export default class Cultivator {
   constructor() {
@@ -41,6 +45,8 @@ export default class Cultivator {
     this.y = 0;
     this.state = 'idle';
     this.attackTimer = 0;
+    this.breathTimer = 0;
+    this.particles = [];
 
     this.initPosition();
   }
@@ -110,14 +116,6 @@ export default class Cultivator {
 
     // spirit bound
     if (this.spirit > this.maxSpirit) this.spirit = this.maxSpirit;
-
-    // cultivation cap from inner skills
-    const baseCap = this.maxCultivation;
-    this.innerSkills.forEach(skill => {
-      if (skill.effectType === 'cultivateCap') {
-        // handled in cultivation system, not here
-      }
-    });
   }
 
   applySkillBonus(skill) {
@@ -164,42 +162,185 @@ export default class Cultivator {
     this.bag.push(item);
   }
 
+  update(dt) {
+    this.breathTimer += dt * 2;
+
+    // 灵气粒子（高境界才有）
+    if (this.realmIndex >= 2 && Math.random() < 0.3 * dt) {
+      this.particles.push({
+        x: this.x + 20 + Math.random() * 24,
+        y: this.y + 40,
+        alpha: 1,
+        vy: -10 - Math.random() * 10,
+      });
+    }
+
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.y += p.vy * dt;
+      p.alpha -= dt * 0.8;
+      if (p.alpha <= 0) this.particles.splice(i, 1);
+    }
+  }
+
   render(ctx) {
     const cx = this.x;
     const cy = this.y;
     const w = 64;
     const h = 64;
 
-    // Draw simple pixel cultivator
     ctx.save();
 
-    // Body
-    ctx.fillStyle = REALMS[this.realmIndex].index <= 1 ? '#CCCCCC' :
-      REALMS[this.realmIndex].index <= 3 ? '#8B9DC3' :
-      REALMS[this.realmIndex].index <= 5 ? '#9C27B0' :
-      REALMS[this.realmIndex].index <= 7 ? '#E1BEE7' :
-      '#FFFFFF';
+    // 阴影
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(cx + 32, cy + h + 4, 24, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-    ctx.fillRect(cx + 20, cy + 20, 24, 28);
-    // Head
+    // 境界外观对照表
+    const realmIdx = this.realmIndex;
+
+    // 服饰颜色
+    let robeColor;
+    let auraColor = null;
+    let auraWidth = 0;
+
+    if (realmIdx <= 0) { // 炼气期 — 灰白布衣
+      robeColor = '#CFD8DC';
+    } else if (realmIdx <= 1) { // 筑基期 — 青色道袍
+      robeColor = '#80CBC4';
+      auraColor = 'rgba(128, 203, 196, 0.15)';
+      auraWidth = 4;
+    } else if (realmIdx <= 2) { // 金丹期 — 蓝白道袍
+      robeColor = '#90CAF9';
+      auraColor = 'rgba(255, 215, 0, 0.2)';
+      auraWidth = 6;
+    } else if (realmIdx <= 3) { // 元婴期 — 紫袍
+      robeColor = '#CE93D8';
+      auraColor = 'rgba(206, 147, 216, 0.25)';
+      auraWidth = 8;
+    } else if (realmIdx <= 4) { // 化神期 — 金边黑袍
+      robeColor = '#424242';
+      auraColor = 'rgba(255, 215, 0, 0.3)';
+      auraWidth = 10;
+    } else if (realmIdx <= 5) { // 炼虚期 — 银白长袍
+      robeColor = '#E0E0E0';
+      auraColor = 'rgba(176, 190, 197, 0.3)';
+      auraWidth = 12;
+    } else if (realmIdx <= 6) { // 合体期 — 七彩法袍
+      robeColor = '#FFCC80';
+      auraColor = 'rgba(255, 215, 0, 0.35)';
+      auraWidth = 14;
+    } else if (realmIdx <= 7) { // 大乘期 — 纯白仙袍
+      robeColor = '#FFFFFF';
+      auraColor = 'rgba(255, 255, 255, 0.35)';
+      auraWidth = 16;
+    } else if (realmIdx <= 8) { // 渡劫期 — 白袍带雷纹
+      robeColor = '#FAFAFA';
+      auraColor = 'rgba(156, 39, 176, 0.35)';
+      auraWidth = 18;
+    } else { // 真仙境 — 半透明仙体
+      robeColor = 'rgba(255,255,255,0.85)';
+      auraColor = 'rgba(255, 215, 0, 0.4)';
+      auraWidth = 20;
+    }
+
+    // 灵气光环
+    if (auraColor && auraWidth > 0) {
+      ctx.fillStyle = auraColor;
+      ctx.beginPath();
+      ctx.arc(cx + 32, cy + 32, 32 + auraWidth, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const breathOffset = Math.sin(this.breathTimer) * 1.5;
+
+    // 身体（像素风修士）
+    ctx.fillStyle = robeColor;
+    // 躯干
+    ctx.fillRect(cx + 22, cy + 24 + breathOffset, 20, 26);
+    // 下摆
+    ctx.fillRect(cx + 18, cy + 48 + breathOffset, 28, 12);
+
+    // 头
     ctx.fillStyle = '#FFE0B2';
-    ctx.fillRect(cx + 20, cy + 4, 24, 18);
-    // Eyes
+    ctx.fillRect(cx + 24, cy + 6 + breathOffset, 16, 16);
+
+    // 头发
+    ctx.fillStyle = realmIdx >= 8 ? '#FAFAFA' : '#3E2723';
+    ctx.fillRect(cx + 24, cy + 4 + breathOffset, 16, 6);
+    ctx.fillRect(cx + 22, cy + 6 + breathOffset, 4, 8);
+    ctx.fillRect(cx + 38, cy + 6 + breathOffset, 4, 8);
+
+    // 眼睛
     ctx.fillStyle = '#000';
-    ctx.fillRect(cx + 28, cy + 10, 4, 4);
-    ctx.fillRect(cx + 36, cy + 10, 4, 4);
+    ctx.fillRect(cx + 28, cy + 14 + breathOffset, 3, 3);
+    ctx.fillRect(cx + 35, cy + 14 + breathOffset, 3, 3);
 
-    // Spirit bar above head
+    // 眉毛（高境界更锐利）
+    if (realmIdx >= 4) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(cx + 27, cy + 11 + breathOffset, 4, 1);
+      ctx.fillRect(cx + 35, cy + 11 + breathOffset, 4, 1);
+    }
+
+    // 手臂
+    ctx.fillStyle = robeColor;
+    ctx.fillRect(cx + 10, cy + 28 + breathOffset, 10, 8);
+    ctx.fillRect(cx + 44, cy + 28 + breathOffset, 10, 8);
+
+    // 武器（如果有武器装备，显示一把小剑）
+    if (this.equipment.weapon) {
+      ctx.fillStyle = '#B0BEC5';
+      // 剑身
+      ctx.fillRect(cx + 52, cy + 22 + breathOffset, 3, 18);
+      // 剑尖
+      ctx.beginPath();
+      ctx.moveTo(cx + 52, cy + 22 + breathOffset);
+      ctx.lineTo(cx + 53.5, cy + 16 + breathOffset);
+      ctx.lineTo(cx + 55, cy + 22 + breathOffset);
+      ctx.closePath();
+      ctx.fill();
+      // 剑柄
+      ctx.fillStyle = '#8D6E63';
+      ctx.fillRect(cx + 51, cy + 38 + breathOffset, 5, 4);
+    }
+
+    // 饰品光环（如果有饰品）
+    if (this.equipment.accessory && realmIdx >= 3) {
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx + 14, cy + 2 + breathOffset, 36, 60);
+    }
+
+    // 灵气粒子渲染
+    this.particles.forEach(p => {
+      drawSpiritParticle(ctx, p.x, p.y, p.alpha);
+    });
+
+    // 灵力条（头部上方）
+    const barX = cx + 10;
+    const barY = cy - 8 + breathOffset;
+    const barW = 44;
+    const barH = 5;
+    const spiritRatio = this.spirit / this.maxSpirit;
+
     ctx.fillStyle = '#333';
-    ctx.fillRect(cx + 8, cy - 8, 48, 6);
-    ctx.fillStyle = '#42A5F5';
-    ctx.fillRect(cx + 8, cy - 8, 48 * (this.spirit / this.maxSpirit), 6);
+    ctx.fillRect(barX, barY, barW, barH);
+    const grad = ctx.createLinearGradient(barX, barY, barX + barW * spiritRatio, barY);
+    grad.addColorStop(0, '#42A5F5');
+    grad.addColorStop(1, '#90CAF9');
+    ctx.fillStyle = grad;
+    ctx.fillRect(barX, barY, barW * spiritRatio, barH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barW, barH);
 
-    // Label
+    // 境界标签
     ctx.fillStyle = '#F5E6C8';
-    ctx.font = '10px sans-serif';
+    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`${this.realm}·${this.level}层`, cx + 32, cy + 60);
+    ctx.fillText(`${this.realm}·${this.level}层`, cx + 32, cy + h + 14);
 
     ctx.restore();
   }
