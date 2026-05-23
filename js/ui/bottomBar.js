@@ -1,3 +1,5 @@
+import { BOTTOM_BAR_H } from '../render';
+
 export default class BottomBar {
   constructor() {
     this.buttons = [
@@ -8,7 +10,7 @@ export default class BottomBar {
       { id: 'map', label: '地图', x: 0, y: 0, w: 0, h: 0 },
     ];
     this.activePanel = null;
-    this.h = 52;
+    this.h = BOTTOM_BAR_H;
   }
 
   get y() {

@@ -1,16 +1,21 @@
+import { TOP_BAR_H, SAFE_TOP, BOTTOM_BAR_H } from '../render';
+
 export default class FloatingText {
   constructor() {
     this.texts = [];
   }
 
   show(message, color) {
+    const topArea = SAFE_TOP + TOP_BAR_H;
+    const bottomArea = BOTTOM_BAR_H;
+    const centerY = topArea + (canvas.height - topArea - bottomArea) * 0.3;
     this.texts.push({
       text: message,
       color: color || '#FFD700',
       alpha: 1,
       lifeTime: 0,
       maxLifeTime: 2.5,
-      y: canvas.height * 0.75,
+      y: centerY,
     });
   }
 

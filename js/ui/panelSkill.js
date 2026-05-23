@@ -1,29 +1,28 @@
 import { PROFICIENCY_LEVELS } from '../config/outerSkills';
+import { PANEL_Y, PANEL_H } from '../render';
 
 export default class PanelSkill {
   constructor() {
     this.visible = false;
-    this.tab = 'inner'; // 'inner' | 'outer'
-    this.scrollY = 0;
+    this.tab = 'inner';
   }
 
-  show() { this.visible = true; this.scrollY = 0; }
+  show() { this.visible = true; }
   hide() { this.visible = false; }
 
   handleTouch(x, y) {
     if (!this.visible) return false;
 
     const px = 10;
-    const py = 60;
+    const py = PANEL_Y;
     const pw = canvas.width - 20;
-    const ph = canvas.height - 140;
+    const ph = PANEL_H;
 
     if (x < px || x > px + pw || y < py || y > py + ph) {
       this.hide();
       return false;
     }
 
-    // Tab switch
     const tabY = py + 30;
     const tabW = pw / 2;
     if (y >= tabY && y <= tabY + 30) {
@@ -32,7 +31,6 @@ export default class PanelSkill {
       return true;
     }
 
-    // tap inside: close
     return true;
   }
 
@@ -42,30 +40,26 @@ export default class PanelSkill {
     const player = GameGlobal.databus.cultivator;
 
     const px = 10;
-    const py = 60;
+    const py = PANEL_Y;
     const pw = canvas.width - 20;
-    const ph = canvas.height - 140;
+    const ph = PANEL_H;
 
     ctx.save();
 
-    // overlay
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // panel background
     ctx.fillStyle = 'rgba(26, 26, 46, 0.97)';
     ctx.fillRect(px, py, pw, ph);
     ctx.strokeStyle = '#C9A96E';
     ctx.lineWidth = 2;
     ctx.strokeRect(px, py, pw, ph);
 
-    // title
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('功法', px + pw / 2, py + 22);
 
-    // tabs
     const tabW = pw / 2;
     const tabY = py + 30;
     ctx.fillStyle = this.tab === 'inner' ? '#C9A96E' : '#444';
@@ -79,7 +73,6 @@ export default class PanelSkill {
     ctx.fillStyle = '#FFF';
     ctx.fillText('术法', px + tabW + tabW / 2, tabY + 18);
 
-    // skill list
     const listStartY = tabY + 40;
     let curY = listStartY;
 
@@ -103,19 +96,16 @@ export default class PanelSkill {
       ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)';
       ctx.fillRect(px + 5, curY, pw - 10, itemH);
 
-      // skill name
       ctx.fillStyle = '#F5E6C8';
       ctx.font = 'bold 13px sans-serif';
       ctx.fillText(skill.name, px + 15, curY + 18);
 
-      // skill type label
       const typeLabels = { inner: '心法', active: '主动', passive: '被动', aura: '光环' };
       const typeLabel = typeLabels[skill.type] || typeLabels.inner;
       ctx.fillStyle = skill.type === 'active' ? '#42A5F5' : '#4CAF50';
       ctx.font = '10px sans-serif';
       ctx.fillText(`[${typeLabel}]`, px + 15, curY + 35);
 
-      // proficiency
       const profInfo = skill.proficiencyName;
       const nextLevel = PROFICIENCY_LEVELS[skill.proficiencyLevel + 1];
       ctx.fillStyle = '#FFD700';
@@ -126,7 +116,6 @@ export default class PanelSkill {
         ctx.fillText(`${profInfo} (MAX)`, px + 80, curY + 35);
       }
 
-      // effect preview
       const effect = skill.baseEffect * skill.getMultiplier();
       let effectText = '';
       switch (skill.effectType) {
@@ -142,7 +131,6 @@ export default class PanelSkill {
       }
       ctx.fillText(effectText, px + pw - 120, curY + 35);
 
-      // spirit cost for active skills
       if (skill.spiritCost > 0) {
         ctx.fillStyle = '#42A5F5';
         ctx.font = '10px sans-serif';

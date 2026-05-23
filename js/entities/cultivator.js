@@ -46,8 +46,11 @@ export default class Cultivator {
   }
 
   initPosition() {
+    const topMargin = 100;
+    const bottomMargin = 70;
+    const combatArea = canvas.height - topMargin - bottomMargin;
     this.x = canvas.width / 2 - 32;
-    this.y = canvas.height * 0.6;
+    this.y = topMargin + combatArea * 0.72;
   }
 
   getGlobalLevel() {

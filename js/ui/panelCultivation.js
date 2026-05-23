@@ -1,5 +1,6 @@
 import { formatNumber } from '../utils/number';
 import REALMS from '../config/realms';
+import { PANEL_Y, PANEL_H } from '../render';
 
 export default class PanelCultivation {
   constructor() {
@@ -13,9 +14,9 @@ export default class PanelCultivation {
     if (!this.visible) return false;
 
     const panelX = 10;
-    const panelY = 60;
+    const panelY = PANEL_Y;
     const panelW = canvas.width - 20;
-    const panelH = 300;
+    const panelH = PANEL_H;
 
     if (x < panelX || x > panelX + panelW || y < panelY || y > panelY + panelH) {
       this.hide();
@@ -24,7 +25,7 @@ export default class PanelCultivation {
 
     // Breakthrough button
     const btnX = panelX + 20;
-    const btnY = panelY + 200;
+    const btnY = panelY + panelH - 60;
     const btnW = panelW - 40;
     const btnH = 40;
 
@@ -36,7 +37,7 @@ export default class PanelCultivation {
       return true;
     }
 
-    return true; // consumed click on panel
+    return true;
   }
 
   render(ctx) {
@@ -46,9 +47,9 @@ export default class PanelCultivation {
     const realm = REALMS[player.realmIndex];
 
     const px = 10;
-    const py = 60;
+    const py = PANEL_Y;
     const pw = canvas.width - 20;
-    const ph = 340;
+    const ph = PANEL_H;
 
     ctx.save();
 

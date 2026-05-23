@@ -1,4 +1,5 @@
 import MAPS from '../config/maps';
+import { PANEL_Y, PANEL_H } from '../render';
 
 export default class PanelMap {
   constructor() {
@@ -13,9 +14,9 @@ export default class PanelMap {
     if (!this.visible) return false;
 
     const px = 10;
-    const py = 60;
+    const py = PANEL_Y;
     const pw = canvas.width - 20;
-    const ph = canvas.height - 140;
+    const ph = PANEL_H;
 
     if (x < px || x > px + pw || y < py || y > py + ph) {
       this.hide();
@@ -49,9 +50,9 @@ export default class PanelMap {
     const currentMapId = GameGlobal.databus.currentMapId;
 
     const px = 10;
-    const py = 60;
+    const py = PANEL_Y;
     const pw = canvas.width - 20;
-    const ph = canvas.height - 140;
+    const ph = PANEL_H;
 
     ctx.save();
 

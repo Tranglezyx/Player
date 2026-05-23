@@ -1,4 +1,3 @@
-import Sprite from '../base/sprite';
 import { MONSTER_TIERS, MONSTER_NAMES } from '../config/monsters';
 
 export default class Monster {
@@ -34,8 +33,12 @@ export default class Monster {
     const names = MONSTER_NAMES[Math.min(tier - 1, MONSTER_NAMES.length - 1)];
     this.name = names[Math.floor(Math.random() * names.length)];
 
+    // 怪物位置：顶部信息栏之下，屏幕垂直 30% 处
+    const topMargin = 100;
+    const bottomMargin = 70;
+    const combatArea = canvas.height - topMargin - bottomMargin;
     this.x = canvas.width / 2 - 40;
-    this.y = canvas.height * 0.25;
+    this.y = topMargin + combatArea * 0.25;
     this.state = 'idle';
     this.isActive = true;
     this.isAnimating = false;

@@ -1,22 +1,22 @@
 import { formatNumber } from '../utils/number';
-import { EQUIPMENT_NAMES, QUALITIES } from '../config/equipment';
+import { QUALITIES } from '../config/equipment';
+import { PANEL_Y, PANEL_H } from '../render';
 
 export default class PanelBag {
   constructor() {
     this.visible = false;
-    this.scrollY = 0;
   }
 
-  show() { this.visible = true; this.scrollY = 0; }
+  show() { this.visible = true; }
   hide() { this.visible = false; }
 
   handleTouch(x, y) {
     if (!this.visible) return false;
 
     const px = 10;
-    const py = 60;
+    const py = PANEL_Y;
     const pw = canvas.width - 20;
-    const ph = canvas.height - 140;
+    const ph = PANEL_H;
 
     if (x < px || x > px + pw || y < py || y > py + ph) {
       this.hide();
@@ -30,7 +30,6 @@ export default class PanelBag {
     const tapIndex = Math.floor(tapY / (itemH + 2));
 
     if (tapIndex >= 0 && tapIndex < player.bag.length) {
-      // sell item on tap
       if (GameGlobal.databus.equipmentSystem) {
         GameGlobal.databus.equipmentSystem.sellItem(player, tapIndex);
       }
@@ -45,30 +44,26 @@ export default class PanelBag {
     const player = GameGlobal.databus.cultivator;
 
     const px = 10;
-    const py = 60;
+    const py = PANEL_Y;
     const pw = canvas.width - 20;
-    const ph = canvas.height - 140;
+    const ph = PANEL_H;
 
     ctx.save();
 
-    // overlay
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // panel
     ctx.fillStyle = 'rgba(26, 26, 46, 0.97)';
     ctx.fillRect(px, py, pw, ph);
     ctx.strokeStyle = '#C9A96E';
     ctx.lineWidth = 2;
     ctx.strokeRect(px, py, pw, ph);
 
-    // title
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('背包', px + pw / 2, py + 22);
 
-    // equipped items
     ctx.textAlign = 'left';
     ctx.fillStyle = '#F5E6C8';
     ctx.font = '12px sans-serif';
@@ -88,7 +83,6 @@ export default class PanelBag {
       eqY += 16;
     });
 
-    // bag items
     ctx.fillStyle = '#F5E6C8';
     ctx.font = '12px sans-serif';
     ctx.fillText(`背包 (${player.bag.length}件，点击出售):`, px + 15, eqY + 6);
@@ -110,7 +104,6 @@ export default class PanelBag {
 
       ctx.fillStyle = '#999';
       ctx.font = '10px sans-serif';
-      const stats = Object.entries(item.stats || {}).map(([k, v]) => `${k}: ${formatNumber(v)}`).join(' ');
       ctx.fillText(`售价: ${formatNumber(Math.floor(item.price * 0.5))}`, px + 15, curY + 35);
 
       curY += itemH + 2;
