@@ -13,9 +13,16 @@ import {
 export default class PanelShop {
   constructor() {
     this.visible = false;
+    this._scrollOffset = 0;
+    this._touchStartY = 0;
+    this._lastTouchY = 0;
+    this._isDragging = false;
+    this._pendingIndex = -1;
+    this._pendingX = 0;
+    this._pendingY = 0;
   }
 
-  show() { this.visible = true; }
+  show() { this.visible = true; this._scrollOffset = 0; }
   hide() { this.visible = false; }
 
   handleTouch(x, y) {
@@ -31,35 +38,74 @@ export default class PanelShop {
       return false;
     }
 
-    const refreshBtnY = py + 38;
-    const refreshBtnH = 26;
-    const refreshBtnX = px + pw - 100;
-    const refreshBtnW = 90;
+    this._touchStartY = y;
+    this._lastTouchY = y;
+    this._isDragging = false;
+    this._pendingIndex = -1;
 
-    if (x >= refreshBtnX && x <= refreshBtnX + refreshBtnW && y >= refreshBtnY && y <= refreshBtnY + refreshBtnH) {
+    // 刷新按钮：即时响应
+    if (y >= py + 38 && y <= py + 64 && x >= px + pw - 100 && x <= px + pw - 10) {
       if (GameGlobal.databus.shopSystem) {
         GameGlobal.databus.shopSystem.manualRefresh();
       }
       return true;
     }
 
-    const listStartY = py + 72;
-    const itemH = 56;
+    // 商品列表：延迟处理
     const shopSystem = GameGlobal.databus.shopSystem;
     if (!shopSystem) return true;
 
-    const tapY = y - listStartY;
-    const tapIndex = Math.floor(tapY / (itemH + 2));
+    const listStartY = py + 68;
+    const itemH = 56;
+    const itemGap = 2;
 
-    if (tapIndex >= 0 && tapIndex < shopSystem.items.length) {
-      if (x > px + pw - 34) {
-        shopSystem.toggleLock(tapIndex);
-      } else {
-        shopSystem.buy(tapIndex);
+    for (let i = 0; i < shopSystem.items.length; i++) {
+      const curY = listStartY - this._scrollOffset + i * (itemH + itemGap);
+      if (curY + itemH < listStartY) continue;
+      if (curY > py + ph - 24) break;
+
+      if (y >= curY && y <= curY + itemH) {
+        this._pendingIndex = i;
+        this._pendingX = x;
+        this._pendingY = y;
+        break;
       }
     }
 
     return true;
+  }
+
+  handleTouchMove(x, y) {
+    if (!this.visible) return;
+    const dy = this._lastTouchY - y;
+    this._lastTouchY = y;
+
+    if (Math.abs(y - this._touchStartY) > 5) {
+      this._isDragging = true;
+      this._pendingIndex = -1;
+    }
+
+    if (this._isDragging) {
+      const maxScroll = this._maxScroll || 0;
+      this._scrollOffset = Math.max(0, Math.min(maxScroll, this._scrollOffset + dy));
+    }
+  }
+
+  handleTouchEnd() {
+    if (!this.visible) return;
+    if (this._isDragging || this._pendingIndex < 0) return;
+
+    const shopSystem = GameGlobal.databus.shopSystem;
+    if (!shopSystem) return;
+    if (this._pendingIndex >= shopSystem.items.length) return;
+
+    const px = 10;
+    const pw = canvas.width - 20;
+    if (this._pendingX > px + pw - 34) {
+      shopSystem.toggleLock(this._pendingIndex);
+    } else {
+      shopSystem.buy(this._pendingIndex);
+    }
   }
 
   render(ctx) {
@@ -95,12 +141,20 @@ export default class PanelShop {
 
     // 商品列表
     const listStartY = py + 68;
-    let curY = listStartY;
+    const itemH = 54;
+    const itemGap = 4;
+    let curY = listStartY - this._scrollOffset;
+
+    // clamp scroll
+    const visibleH = py + ph - 24 - listStartY;
+    const totalH = shopSystem.items.length * (itemH + itemGap);
+    this._maxScroll = Math.max(0, totalH - visibleH);
+    if (this._scrollOffset > this._maxScroll) this._scrollOffset = this._maxScroll;
 
     shopSystem.items.forEach((item, i) => {
+      if (curY + itemH < listStartY) { curY += itemH + itemGap; return; }
       if (curY > py + ph - 24) return;
 
-      const itemH = 54;
       drawListItem(ctx, px + 5, curY, pw - 10, itemH, i, item.locked);
 
       // 锁定图标区
@@ -134,7 +188,7 @@ export default class PanelShop {
       ctx.fillText(formatNumber(item.price) + ' 灵石', px + pw - 15, curY + 38);
       ctx.textAlign = 'left';
 
-      curY += itemH + 4;
+      curY += itemH + itemGap;
     });
 
     if (shopSystem.items.length === 0) {
