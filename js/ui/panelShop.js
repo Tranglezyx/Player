@@ -44,7 +44,7 @@ export default class PanelShop {
     this._pendingIndex = -1;
 
     // 刷新按钮：即时响应
-    if (y >= py + 38 && y <= py + 64 && x >= px + pw - 100 && x <= px + pw - 10) {
+    if (y >= py + 30 && y <= py + 54 && x >= px + pw - 100 && x <= px + pw - 10) {
       if (GameGlobal.databus.shopSystem) {
         GameGlobal.databus.shopSystem.manualRefresh();
       }
@@ -80,7 +80,7 @@ export default class PanelShop {
     const dy = this._lastTouchY - y;
     this._lastTouchY = y;
 
-    if (Math.abs(y - this._touchStartY) > 5) {
+    if (Math.abs(y - this._touchStartY) > 10) {
       this._isDragging = true;
       this._pendingIndex = -1;
     }

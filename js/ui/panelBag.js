@@ -92,7 +92,7 @@ export default class PanelBag {
     const dy = this._lastTouchY - y;
     this._lastTouchY = y;
 
-    if (Math.abs(y - this._touchStartY) > 5) {
+    if (Math.abs(y - this._touchStartY) > 10) {
       this._isDragging = true;
       this._pendingBagIndex = -1;
     }

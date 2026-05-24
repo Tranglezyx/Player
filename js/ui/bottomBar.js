@@ -37,8 +37,9 @@ export default class BottomBar {
   handleTouch(x, y) {
     for (const btn of this.buttons) {
       if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
-        this.activePanel = btn.id === this.activePanel ? null : btn.id;
-        return btn.id;
+        const wasActive = this.activePanel === btn.id;
+        this.activePanel = wasActive ? null : btn.id;
+        return wasActive ? null : btn.id;
       }
     }
     return null;

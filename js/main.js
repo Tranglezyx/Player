@@ -207,6 +207,8 @@ export default class Main {
     this.panelShop.hide();
     this.panelMap.hide();
 
+    if (!panelId) return;
+
     // open selected
     switch (panelId) {
       case 'cultivation':
