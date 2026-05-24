@@ -91,6 +91,7 @@ export default class CombatSystem {
     dmg.init(monster.x + 32, monster.y - 20, damage, false, 'skill');
     this.damageNumbers.push(dmg);
     skill.proficiency += 1;
+    skill.updateProficiency();
     this.checkMonsterDeath(monster);
   }
 

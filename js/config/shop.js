@@ -19,12 +19,15 @@ function generateShopItem(realmIndex) {
 
 function generateEquipmentItem(realmIndex) {
   const slotNames = { weapon: '武器', helmet: '冠', armor: '袍', boots: '靴', accessory: '佩' };
+  const statLabels = { attack: '攻击', maxSpirit: '灵力上限', spiritRegen: '灵力回复', attackSpeed: '攻速', critRate: '暴击' };
   const equip = generateEquipment(realmIndex);
+  const statText = Object.entries(equip.stats).map(([k, v]) => `${statLabels[k] || k}+${v}`).join(' ');
   return {
     id: `shop_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     type: 'equipment',
     name: equip.name,
-    description: `${slotNames[equip.slot]} | ${equip.quality}`,
+    qualityIndex: equip.qualityIndex,
+    description: `${slotNames[equip.slot]} | ${equip.quality} | ${statText}`,
     price: equip.price,
     data: equip,
     locked: false,

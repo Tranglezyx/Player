@@ -68,6 +68,6 @@ export function applyOfflineRewards(rewards) {
 
   // add half proficiency to skills (capped at 8h = 28800 seconds)
   const profGain = Math.min(rewards.skillProficiencyGain, 28800 * 0.5);
-  player.innerSkills.forEach(s => s.proficiency += Math.floor(profGain / Math.max(1, player.innerSkills.length)));
-  player.outerSkills.forEach(s => s.proficiency += Math.floor(profGain / Math.max(1, player.outerSkills.length)));
+  player.innerSkills.forEach(s => { s.proficiency += Math.floor(profGain / Math.max(1, player.innerSkills.length)); s.updateProficiency(); });
+  player.outerSkills.forEach(s => { s.proficiency += Math.floor(profGain / Math.max(1, player.outerSkills.length)); s.updateProficiency(); });
 }

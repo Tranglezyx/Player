@@ -126,6 +126,10 @@ export default class Main {
         }
       }
 
+      // 兼容旧存档：同步熟练度等级
+      player.innerSkills.forEach(s => s.updateProficiency());
+      player.outerSkills.forEach(s => s.updateProficiency());
+
       player.recalcStats();
     } else {
       // new player: initialize

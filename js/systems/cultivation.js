@@ -60,6 +60,7 @@ export default class CultivationSystem {
     // inner skills proficiency
     player.innerSkills.forEach(skill => {
       skill.proficiency += 1;
+      skill.updateProficiency();
     });
 
     // check level up

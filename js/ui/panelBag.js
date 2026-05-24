@@ -15,6 +15,7 @@ import {
 export default class PanelBag {
   constructor() {
     this.visible = false;
+    this._expandedSlot = null;
   }
 
   show() { this.visible = true; }
@@ -34,14 +35,46 @@ export default class PanelBag {
     }
 
     const player = GameGlobal.databus.cultivator;
-    const itemH = 48;
-    const listStartY = py + 120;
-    const tapY = y - listStartY;
-    const tapIndex = Math.floor(tapY / (itemH + 6));
 
-    if (tapIndex >= 0 && tapIndex < player.bag.length) {
-      if (GameGlobal.databus.equipmentSystem) {
-        GameGlobal.databus.equipmentSystem.sellItem(player, tapIndex);
+    // 已装备槽位点击
+    if (this._eqRects) {
+      for (const rect of this._eqRects) {
+        if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
+          if (rect.hasItem) {
+            this._expandedSlot = this._expandedSlot === rect.slot ? null : rect.slot;
+          }
+          return true;
+        }
+      }
+    }
+
+    const listStartY = this._lastListStartY || py + 236;
+    const itemH = 48;
+    const btnW = 26;
+    const btnH = 20;
+    const btnGap = 6;
+    const btnAreaLeft = px + pw - 10 - btnW * 2 - btnGap;
+
+    for (let i = 0; i < player.bag.length; i++) {
+      const curY = listStartY + i * (itemH + 6);
+      if (curY > py + ph - 20) break;
+
+      if (y >= curY && y <= curY + itemH) {
+        const btnY = curY + (itemH - btnH) / 2;
+        const item = player.bag[i];
+
+        if (item.slot && x >= btnAreaLeft && x <= btnAreaLeft + btnW && y >= btnY && y <= btnY + btnH) {
+          player.equipItem(item);
+          player.bag.splice(i, 1);
+          return true;
+        }
+        if (x >= btnAreaLeft + btnW + btnGap && x <= btnAreaLeft + btnW * 2 + btnGap && y >= btnY && y <= btnY + btnH) {
+          if (GameGlobal.databus.equipmentSystem) {
+            GameGlobal.databus.equipmentSystem.sellItem(player, i);
+          }
+          return true;
+        }
+        break;
       }
     }
 
@@ -77,44 +110,79 @@ export default class PanelBag {
     const slotIcons = ['attack', 'spirit', 'spirit', 'attack', 'attack'];
     let eqY = py + 58;
 
+    this._eqRects = [];
+    const statLabels = { attack: '攻击', maxSpirit: '灵力上限', spiritRegen: '灵力回复', attackSpeed: '攻速', critRate: '暴击' };
+
     slots.forEach((slot, i) => {
       const item = player.equipment[slot];
+      const isExpanded = item && this._expandedSlot === slot;
+      const boxH = isExpanded ? 38 : 22;
+      const step = isExpanded ? 48 : 32;
+      const boxX = contentX;
+      const boxY = eqY - 12;
+      const boxW = pw - 30;
+
+      this._eqRects.push({
+        slot,
+        x: boxX,
+        y: boxY,
+        w: boxW,
+        h: boxH,
+        hasItem: !!item,
+      });
+
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+
       if (item) {
-        // 装备格背景
-        ctx.fillStyle = 'rgba(255,255,255,0.04)';
-        ctx.fillRect(contentX, eqY - 12, pw - 30, 22);
         ctx.strokeStyle = getQualityColor(item.qualityIndex);
         ctx.lineWidth = 1;
-        ctx.strokeRect(contentX, eqY - 12, pw - 30, 22);
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
 
         const color = getQualityColor(item.qualityIndex);
         ctx.fillStyle = color;
         ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'left';
         ctx.fillText(item.name, contentX + 6, eqY + 2);
 
         drawQualityBadge(ctx, contentX + 90, eqY - 10, item.qualityIndex);
-      } else {
-        ctx.fillStyle = 'rgba(255,255,255,0.02)';
-        ctx.fillRect(contentX, eqY - 12, pw - 30, 22);
-        ctx.strokeStyle = '#444';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(contentX, eqY - 12, pw - 30, 22);
+        ctx.textAlign = 'left';
 
-        ctx.fillStyle = '#666';
+        if (isExpanded) {
+          const statEntries = Object.entries(item.stats);
+          const statText = statEntries.map(([k, v]) => `${statLabels[k] || k}+${v}`).join('  ');
+          ctx.fillStyle = color;
+          ctx.font = '13px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(statText, contentX + 6, eqY + 20);
+        }
+      } else {
+        ctx.strokeStyle = 'rgba(100,100,100,0.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+        ctx.fillStyle = '#888';
         ctx.font = '15px sans-serif';
+        ctx.textAlign = 'left';
         ctx.fillText(`${slotNames[i]}: 空`, contentX + 6, eqY + 2);
       }
-      eqY += 32;
+      eqY += step;
     });
 
     // 背包区域标题
     ctx.fillStyle = PALETTE.textMain;
     ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(`背包 (${player.bag.length}件，点击出售)`, contentX, eqY + 6);
+    ctx.textAlign = 'left';
+    ctx.fillText(`背包 (${player.bag.length}件)`, contentX, eqY + 6);
 
     const listStartY = eqY + 18;
+    this._lastListStartY = listStartY;
     let curY = listStartY;
     const itemH = 48;
+    const btnW = 26;
+    const btnH = 20;
+    const btnGap = 6;
+    const btnStartX = px + pw - 10 - btnW * 2 - btnGap;
 
     player.bag.forEach((item, i) => {
       if (curY > py + ph - 20) return;
@@ -128,10 +196,12 @@ export default class PanelBag {
 
       ctx.fillStyle = qColor;
       ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'left';
       ctx.fillText(item.name, px + 18, curY + 18);
 
       if (item.qualityIndex !== undefined) {
         drawQualityBadge(ctx, px + 100, curY + 2, item.qualityIndex);
+        ctx.textAlign = 'left';
       }
 
       // 属性简述
@@ -146,13 +216,15 @@ export default class PanelBag {
       }
       ctx.fillStyle = PALETTE.textMuted;
       ctx.font = '14px sans-serif';
+      ctx.textAlign = 'left';
       ctx.fillText(statText, px + 18, curY + 35);
 
-      // 售价
-      ctx.fillStyle = PALETTE.spiritStone;
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(`售 ${formatNumber(Math.floor(item.price * 0.5))}`, px + pw - 15, curY + 26);
+      // 操作按钮
+      const btnY = curY + (itemH - btnH) / 2;
+      if (item.slot) {
+        drawButton(ctx, btnStartX, btnY, btnW, btnH, '穿', false, false);
+      }
+      drawButton(ctx, btnStartX + btnW + btnGap, btnY, btnW, btnH, '售', false, false);
       ctx.textAlign = 'left';
 
       curY += itemH + 6;

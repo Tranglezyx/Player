@@ -24,13 +24,20 @@ class SkillInstance {
   }
 
   updateProficiency() {
-    const nextLevel = PROFICIENCY_LEVELS[this.proficiencyLevel + 1];
-    if (nextLevel && this.proficiency >= nextLevel.threshold) {
-      this.proficiencyLevel += 1;
-      GameGlobal.databus.cultivator.recalcStats();
-      return true;
+    let upgraded = false;
+    while (true) {
+      const nextLevel = PROFICIENCY_LEVELS[this.proficiencyLevel + 1];
+      if (nextLevel && this.proficiency >= nextLevel.threshold) {
+        this.proficiencyLevel += 1;
+        upgraded = true;
+      } else {
+        break;
+      }
     }
-    return false;
+    if (upgraded) {
+      GameGlobal.databus.cultivator.recalcStats();
+    }
+    return upgraded;
   }
 }
 

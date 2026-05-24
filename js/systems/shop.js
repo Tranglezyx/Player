@@ -69,6 +69,9 @@ export default class ShopSystem {
 
     if (item.type === 'equipment') {
       player.addToBag(item.data);
+      if (GameGlobal.databus.equipmentSystem) {
+        GameGlobal.databus.equipmentSystem.autoEquip(player);
+      }
     } else if (item.type === 'skill_fragment') {
       const { skillId, skillType } = item.data;
       const fragKey = `${skillType}_${skillId}`;
