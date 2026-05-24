@@ -16,9 +16,14 @@ export default class PanelBag {
   constructor() {
     this.visible = false;
     this._expandedSlot = null;
+    this._scrollOffset = 0;
+    this._touchStartY = 0;
+    this._lastTouchY = 0;
+    this._isDragging = false;
+    this._pendingBagIndex = -1;
   }
 
-  show() { this.visible = true; }
+  show() { this.visible = true; this._scrollOffset = 0; this._expandedSlot = null; }
   hide() { this.visible = false; }
 
   handleTouch(x, y) {
@@ -35,10 +40,23 @@ export default class PanelBag {
     }
 
     const player = GameGlobal.databus.cultivator;
+    this._touchStartY = y;
+    this._lastTouchY = y;
+    this._isDragging = false;
+    this._pendingBagIndex = -1;
 
-    // 已装备槽位点击
+    // 已装备槽位：即时响应
     if (this._eqRects) {
       for (const rect of this._eqRects) {
+        if (rect.unequipBtn && x >= rect.unequipBtn.x && x <= rect.unequipBtn.x + rect.unequipBtn.w
+          && y >= rect.unequipBtn.y && y <= rect.unequipBtn.y + rect.unequipBtn.h) {
+          const item = player.equipment[rect.slot];
+          player.equipment[rect.slot] = null;
+          player.bag.push(item);
+          player.recalcStats();
+          this._expandedSlot = null;
+          return true;
+        }
         if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
           if (rect.hasItem) {
             this._expandedSlot = this._expandedSlot === rect.slot ? null : rect.slot;
@@ -48,37 +66,75 @@ export default class PanelBag {
       }
     }
 
+    // 背包区域：缓存触摸信息，延迟到 touchEnd 处理（区分点击/滑动）
     const listStartY = this._lastListStartY || py + 236;
     const itemH = 48;
-    const btnW = 26;
-    const btnH = 20;
-    const btnGap = 6;
-    const btnAreaLeft = px + pw - 10 - btnW * 2 - btnGap;
+    const itemGap = 6;
 
     for (let i = 0; i < player.bag.length; i++) {
-      const curY = listStartY + i * (itemH + 6);
+      const curY = listStartY - this._scrollOffset + i * (itemH + itemGap);
+      if (curY + itemH < listStartY) continue;
       if (curY > py + ph - 20) break;
 
       if (y >= curY && y <= curY + itemH) {
-        const btnY = curY + (itemH - btnH) / 2;
-        const item = player.bag[i];
-
-        if (item.slot && x >= btnAreaLeft && x <= btnAreaLeft + btnW && y >= btnY && y <= btnY + btnH) {
-          player.equipItem(item);
-          player.bag.splice(i, 1);
-          return true;
-        }
-        if (x >= btnAreaLeft + btnW + btnGap && x <= btnAreaLeft + btnW * 2 + btnGap && y >= btnY && y <= btnY + btnH) {
-          if (GameGlobal.databus.equipmentSystem) {
-            GameGlobal.databus.equipmentSystem.sellItem(player, i);
-          }
-          return true;
-        }
+        this._pendingBagIndex = i;
+        this._pendingBagX = x;
+        this._pendingBagY = y;
         break;
       }
     }
 
     return true;
+  }
+
+  handleTouchMove(x, y) {
+    if (!this.visible) return;
+    const dy = this._lastTouchY - y;
+    this._lastTouchY = y;
+
+    if (Math.abs(y - this._touchStartY) > 5) {
+      this._isDragging = true;
+      this._pendingBagIndex = -1;
+    }
+
+    if (this._isDragging) {
+      const maxScroll = this._maxScroll || 0;
+      this._scrollOffset = Math.max(0, Math.min(maxScroll, this._scrollOffset + dy));
+    }
+  }
+
+  handleTouchEnd() {
+    if (!this.visible) return;
+    if (this._isDragging || this._pendingBagIndex < 0) return;
+
+    const player = GameGlobal.databus.cultivator;
+    const i = this._pendingBagIndex;
+    if (i < 0 || i >= player.bag.length) return;
+
+    const px = 10;
+    const pw = canvas.width - 20;
+    const x = this._pendingBagX;
+    const y = this._pendingBagY;
+    const btnW = 26;
+    const btnH = 20;
+    const btnGap = 6;
+    const btnAreaLeft = px + pw - 10 - btnW * 2 - btnGap;
+    const listStartY = this._lastListStartY || PANEL_Y + 236;
+    const itemH = 48;
+    const curY = listStartY - this._scrollOffset + i * (itemH + 6);
+    const btnY = curY + (itemH - btnH) / 2;
+    const item = player.bag[i];
+
+    if (item.slot && x >= btnAreaLeft && x <= btnAreaLeft + btnW && y >= btnY && y <= btnY + btnH) {
+      player.equipItem(item);
+      player.bag.splice(i, 1);
+      return;
+    }
+    if (x >= btnAreaLeft + btnW + btnGap && x <= btnAreaLeft + btnW * 2 + btnGap && y >= btnY && y <= btnY + btnH) {
+      if (GameGlobal.databus.equipmentSystem) {
+        GameGlobal.databus.equipmentSystem.sellItem(player, i);
+      }
+    }
   }
 
   render(ctx) {
@@ -103,12 +159,12 @@ export default class PanelBag {
     ctx.fillStyle = PALETTE.textMain;
     ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('已装备', contentX, py + 44);
+    ctx.fillText('已装备', contentX, py + 40);
 
     const slots = ['weapon', 'helmet', 'armor', 'boots', 'accessory'];
     const slotNames = ['武器', '头盔', '衣服', '鞋子', '饰品'];
     const slotIcons = ['attack', 'spirit', 'spirit', 'attack', 'attack'];
-    let eqY = py + 58;
+    let eqY = py + 66;
 
     this._eqRects = [];
     const statLabels = { attack: '攻击', maxSpirit: '灵力上限', spiritRegen: '灵力回复', attackSpeed: '攻速', critRate: '暴击' };
@@ -121,6 +177,8 @@ export default class PanelBag {
       const boxX = contentX;
       const boxY = eqY - 12;
       const boxW = pw - 30;
+      const unequipBtnW = 28;
+      const unequipBtnH = 16;
 
       this._eqRects.push({
         slot,
@@ -129,6 +187,7 @@ export default class PanelBag {
         w: boxW,
         h: boxH,
         hasItem: !!item,
+        unequipBtn: isExpanded ? { x: boxX + boxW - unequipBtnW - 4, y: eqY + 8, w: unequipBtnW, h: unequipBtnH } : null,
       });
 
       ctx.fillStyle = 'rgba(255,255,255,0.06)';
@@ -155,6 +214,11 @@ export default class PanelBag {
           ctx.font = '13px sans-serif';
           ctx.textAlign = 'left';
           ctx.fillText(statText, contentX + 6, eqY + 20);
+
+          const unequipBtnX = boxX + boxW - unequipBtnW - 4;
+          const unequipBtnY = eqY + 8;
+          drawButton(ctx, unequipBtnX, unequipBtnY, unequipBtnW, unequipBtnH, '卸', false, false);
+          ctx.textAlign = 'left';
         }
       } else {
         ctx.strokeStyle = 'rgba(100,100,100,0.5)';
@@ -177,14 +241,22 @@ export default class PanelBag {
 
     const listStartY = eqY + 18;
     this._lastListStartY = listStartY;
-    let curY = listStartY;
+    let curY = listStartY - this._scrollOffset;
     const itemH = 48;
+    const itemGap = 6;
     const btnW = 26;
     const btnH = 20;
     const btnGap = 6;
     const btnStartX = px + pw - 10 - btnW * 2 - btnGap;
 
+    // clamp scroll after render to keep things tidy
+    const visibleH = ph - (listStartY - py) - 20;
+    const totalH = player.bag.length * (itemH + itemGap);
+    this._maxScroll = Math.max(0, totalH - visibleH);
+    if (this._scrollOffset > this._maxScroll) this._scrollOffset = this._maxScroll;
+
     player.bag.forEach((item, i) => {
+      if (curY + itemH < listStartY) { curY += itemH + itemGap; return; }
       if (curY > py + ph - 20) return;
 
       const qColor = item.qualityIndex !== undefined ? getQualityColor(item.qualityIndex) : '#CCC';

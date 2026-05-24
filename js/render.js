@@ -9,8 +9,16 @@ export const SCREEN_WIDTH = windowInfo.screenWidth;
 export const SCREEN_HEIGHT = windowInfo.screenHeight;
 
 // 安全区域偏移，防止内容被状态栏/刘海遮挡
-// statusBarHeight 在 iOS 刘海屏约 44-48px，Android 约 24-32px
 const statusBarHeight = windowInfo.statusBarHeight || 48;
+
+// 右侧安全距离：防止被微信胶囊按钮遮挡
+let menuButtonRight = windowInfo.screenWidth;
+try {
+  const menuBtn = wx.getMenuButtonBoundingClientRect();
+  if (menuBtn) menuButtonRight = menuBtn.left - 8;
+} catch (e) { /* ignore */ }
+
+export const SAFE_RIGHT = windowInfo.screenWidth - menuButtonRight;
 
 // 底部安全距离：全面屏（statusBarHeight >= 40）留更多，普通屏留 8px
 const isNotchScreen = statusBarHeight >= 40;

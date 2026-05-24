@@ -118,6 +118,7 @@ export default class PanelShop {
 
       if (item.qualityIndex !== undefined) {
         drawQualityBadge(ctx, px + 80, curY + 2, item.qualityIndex);
+        ctx.textAlign = 'left';
       }
 
       // 描述

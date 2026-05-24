@@ -181,6 +181,22 @@ export default class Main {
         return;
       }
     });
+
+    wx.onTouchMove((e) => {
+      if (!e.touches || !e.touches.length) return;
+      const touch = e.touches[0];
+      const panel = this.getActivePanel();
+      if (panel && panel.visible && panel.handleTouchMove) {
+        panel.handleTouchMove(touch.clientX, touch.clientY);
+      }
+    });
+
+    wx.onTouchEnd(() => {
+      const panel = this.getActivePanel();
+      if (panel && panel.visible && panel.handleTouchEnd) {
+        panel.handleTouchEnd();
+      }
+    });
   }
 
   handlePanelSwitch(panelId) {

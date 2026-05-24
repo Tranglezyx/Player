@@ -1,7 +1,7 @@
 import { formatNumber } from '../utils/number';
 import MAPS from '../config/maps';
 import REALMS from '../config/realms';
-import { SAFE_TOP, TOP_BAR_H } from '../render';
+import { SAFE_TOP, SAFE_RIGHT, TOP_BAR_H } from '../render';
 import {
   PALETTE,
   drawSpiritStoneIcon,
@@ -87,7 +87,8 @@ export default class TopBar {
     ctx.fillText(`灵石: ${formatNumber(player.spiritStone)} (+${this.stonePerMin}/分)${paused ? ' [暂停]' : ''}`, padX + 16, line3Y);
 
     // 右侧：灵力条 + 等级
-    const barAreaX = w - 150;
+    const rightEdge = w - SAFE_RIGHT;
+    const barAreaX = rightEdge - 150;
     const barY = line1Y - 6;
     const barW = 130;
     const barH = 10;
@@ -97,7 +98,7 @@ export default class TopBar {
     ctx.fillStyle = PALETTE.textMuted;
     ctx.font = '13px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText('灵力', barAreaX + barW, barY - 4);
+    ctx.fillText('灵力', rightEdge, barY - 4);
     ctx.textAlign = 'left';
 
     drawProgressBar(ctx, barAreaX, barY, barW, barH, spiritRatio, PALETTE.spirit, '#222', `${player.spirit}/${player.maxSpirit}`);
@@ -106,10 +107,10 @@ export default class TopBar {
     ctx.fillStyle = PALETTE.textHighlight;
     ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`${player.realm}·${player.level}层`, w - padX, line2Y);
+    ctx.fillText(`${player.realm}·${player.level}层`, rightEdge, line2Y);
     ctx.fillStyle = PALETTE.textMuted;
     ctx.font = '14px sans-serif';
-    ctx.fillText(`Lv.${player.getGlobalLevel()}`, w - padX, line3Y);
+    ctx.fillText(`Lv.${player.getGlobalLevel()}`, rightEdge, line3Y);
     ctx.textAlign = 'left';
 
     ctx.restore();
