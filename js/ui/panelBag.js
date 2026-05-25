@@ -264,29 +264,34 @@ export default class PanelBag {
     ctx.fillText(`背包 (${player.bag.length}件)`, contentX, eqY + 6);
 
     // 一键售卖按钮（标题右侧）
-    const qsToggleX = px + pw - 70;
+    const qsToggleX = px + pw - 80;
     const qsToggleY = eqY + 6 - 14;
-    const qsToggleW = 60;
+    const qsToggleW = 70;
     const qsToggleH = 24;
     drawButton(ctx, qsToggleX, qsToggleY, qsToggleW, qsToggleH, this._showQuickSell ? '收起' : '一键售', false, false);
 
     const qsRects = { toggleBtn: { x: qsToggleX, y: qsToggleY, w: qsToggleW, h: qsToggleH } };
 
-    // 品质选择区（展开时）
+    // 品质选择区（展开时，两行三列）
     let quickSellH = 0;
     if (this._showQuickSell) {
       const toggleY = eqY + 18;
-      const toggleH = 20;
-      const toggleGap = 4;
-      const toggleW = Math.floor((pw - 30 - 5 * toggleGap) / 6);
+      const toggleH = 22;
+      const toggleGap = 6;
+      const rowGap = 6;
+      const cols = 3;
+      const toggleW = Math.floor((pw - 30 - (cols - 1) * toggleGap) / cols);
       const qualities = QUALITIES;
 
       qsRects.qualityToggles = [];
       qualities.forEach((q, qi) => {
-        const tx = contentX + qi * (toggleW + toggleGap);
+        const row = Math.floor(qi / cols);
+        const col = qi % cols;
+        const tx = contentX + col * (toggleW + toggleGap);
+        const ty = toggleY + row * (toggleH + rowGap);
         const selected = this._sellQualities.has(qi);
-        drawButton(ctx, tx, toggleY, toggleW, toggleH, q.name, selected, false);
-        qsRects.qualityToggles.push({ x: tx, y: toggleY, w: toggleW, h: toggleH, qi });
+        drawButton(ctx, tx, ty, toggleW, toggleH, q.name, selected, false);
+        qsRects.qualityToggles.push({ x: tx, y: ty, w: toggleW, h: toggleH, qi });
       });
 
       let sellCount = 0;
@@ -298,7 +303,7 @@ export default class PanelBag {
         }
       });
 
-      const infoY = toggleY + toggleH + 6;
+      const infoY = toggleY + 2 * (toggleH + rowGap) + 6;
       ctx.fillStyle = PALETTE.textMuted;
       ctx.font = '14px sans-serif';
       ctx.textAlign = 'left';
@@ -310,10 +315,10 @@ export default class PanelBag {
         const confirmH = 24;
         drawButton(ctx, confirmX, confirmY, confirmW, confirmH, '确认售出', false, false);
         qsRects.confirmBtn = { x: confirmX, y: confirmY, w: confirmW, h: confirmH };
-        quickSellH = 48;
+        quickSellH = 72;
       } else {
         ctx.fillText('选择品级后一键出售', contentX, infoY + 4);
-        quickSellH = 44;
+        quickSellH = 68;
       }
     }
 
