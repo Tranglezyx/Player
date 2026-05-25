@@ -264,11 +264,11 @@ export default class PanelBag {
     ctx.fillText(`背包 (${player.bag.length}件)`, contentX, eqY + 6);
 
     // 一键售卖按钮（标题右侧）
-    const qsToggleX = px + pw - 80;
+    const qsToggleX = px + pw - 106;
     const qsToggleY = eqY + 6 - 14;
-    const qsToggleW = 70;
+    const qsToggleW = 100;
     const qsToggleH = 24;
-    drawButton(ctx, qsToggleX, qsToggleY, qsToggleW, qsToggleH, this._showQuickSell ? '收起' : '一键售', false, false);
+    drawButton(ctx, qsToggleX, qsToggleY, qsToggleW, qsToggleH, this._showQuickSell ? '收起' : '一键售卖', false, false);
 
     const qsRects = { toggleBtn: { x: qsToggleX, y: qsToggleY, w: qsToggleW, h: qsToggleH } };
 
