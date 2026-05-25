@@ -21,9 +21,11 @@ export default class PanelBag {
     this._lastTouchY = 0;
     this._isDragging = false;
     this._pendingBagIndex = -1;
+    this._showQuickSell = false;
+    this._sellQualities = new Set();
   }
 
-  show() { this.visible = true; this._scrollOffset = 0; this._expandedSlot = null; }
+  show() { this.visible = true; this._scrollOffset = 0; this._expandedSlot = null; this._showQuickSell = false; this._sellQualities = new Set(); }
   hide() { this.visible = false; }
 
   handleTouch(x, y) {
@@ -61,6 +63,28 @@ export default class PanelBag {
           if (rect.hasItem) {
             this._expandedSlot = this._expandedSlot === rect.slot ? null : rect.slot;
           }
+          return true;
+        }
+      }
+    }
+
+    // 一键售卖区域：即时响应
+    if (this._quickSellRects) {
+      const qs = this._quickSellRects;
+      if (this._inRect(x, y, qs.toggleBtn)) {
+        this._showQuickSell = !this._showQuickSell;
+        return true;
+      }
+      if (this._showQuickSell) {
+        for (const t of qs.qualityToggles || []) {
+          if (this._inRect(x, y, t)) {
+            if (this._sellQualities.has(t.qi)) this._sellQualities.delete(t.qi);
+            else this._sellQualities.add(t.qi);
+            return true;
+          }
+        }
+        if (qs.confirmBtn && this._inRect(x, y, qs.confirmBtn)) {
+          this._executeQuickSell();
           return true;
         }
       }
@@ -239,7 +263,63 @@ export default class PanelBag {
     ctx.textAlign = 'left';
     ctx.fillText(`背包 (${player.bag.length}件)`, contentX, eqY + 6);
 
-    const listStartY = eqY + 18;
+    // 一键售卖按钮（标题右侧）
+    const qsToggleX = px + pw - 70;
+    const qsToggleY = eqY + 6 - 14;
+    const qsToggleW = 60;
+    const qsToggleH = 24;
+    drawButton(ctx, qsToggleX, qsToggleY, qsToggleW, qsToggleH, this._showQuickSell ? '收起' : '一键售', false, false);
+
+    const qsRects = { toggleBtn: { x: qsToggleX, y: qsToggleY, w: qsToggleW, h: qsToggleH } };
+
+    // 品质选择区（展开时）
+    let quickSellH = 0;
+    if (this._showQuickSell) {
+      const toggleY = eqY + 18;
+      const toggleH = 20;
+      const toggleGap = 4;
+      const toggleW = Math.floor((pw - 30 - 5 * toggleGap) / 6);
+      const qualities = QUALITIES;
+
+      qsRects.qualityToggles = [];
+      qualities.forEach((q, qi) => {
+        const tx = contentX + qi * (toggleW + toggleGap);
+        const selected = this._sellQualities.has(qi);
+        drawButton(ctx, tx, toggleY, toggleW, toggleH, q.name, selected, false);
+        qsRects.qualityToggles.push({ x: tx, y: toggleY, w: toggleW, h: toggleH, qi });
+      });
+
+      let sellCount = 0;
+      let sellTotal = 0;
+      player.bag.forEach(item => {
+        if (this._sellQualities.has(item.qualityIndex)) {
+          sellCount++;
+          sellTotal += Math.floor(item.price * 0.5);
+        }
+      });
+
+      const infoY = toggleY + toggleH + 6;
+      ctx.fillStyle = PALETTE.textMuted;
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'left';
+      if (sellCount > 0) {
+        ctx.fillText(`将出售 ${sellCount} 件，获得 ${formatNumber(sellTotal)} 灵石`, contentX, infoY + 4);
+        const confirmX = px + pw - 110;
+        const confirmY = infoY - 4;
+        const confirmW = 90;
+        const confirmH = 24;
+        drawButton(ctx, confirmX, confirmY, confirmW, confirmH, '确认售出', false, false);
+        qsRects.confirmBtn = { x: confirmX, y: confirmY, w: confirmW, h: confirmH };
+        quickSellH = 48;
+      } else {
+        ctx.fillText('选择品级后一键出售', contentX, infoY + 4);
+        quickSellH = 44;
+      }
+    }
+
+    this._quickSellRects = qsRects;
+
+    const listStartY = eqY + 18 + quickSellH;
     this._lastListStartY = listStartY;
     let curY = listStartY - this._scrollOffset;
     const itemH = 48;
@@ -311,5 +391,33 @@ export default class PanelBag {
     }
 
     ctx.restore();
+  }
+
+  _inRect(x, y, r) {
+    return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+  }
+
+  _executeQuickSell() {
+    const player = GameGlobal.databus.cultivator;
+    const selected = [...this._sellQualities];
+    if (selected.length === 0) return;
+
+    const toRemove = [];
+    let totalPrice = 0;
+    for (let i = player.bag.length - 1; i >= 0; i--) {
+      if (selected.includes(player.bag[i].qualityIndex)) {
+        totalPrice += Math.floor(player.bag[i].price * 0.5);
+        toRemove.push(i);
+      }
+    }
+    if (toRemove.length === 0) return;
+
+    for (const idx of toRemove) {
+      player.bag.splice(idx, 1);
+    }
+    player.spiritStone += totalPrice;
+    this._showQuickSell = false;
+    this._sellQualities = new Set();
+    this._scrollOffset = 0;
   }
 }
